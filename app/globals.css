@@ -1,26 +1,310 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+  --canvas: #071018;
+  --flame: #ee4d2d;
+  --flame-deep: #d73211;
+  --ink: #f4f7fb;
+  --gold: #f0c14a;
+  --jade: #3dce9a;
+  --sky: #5b9cff;
+  --mist: #163042;
+  --mute: #c5d0dc;
+  --paper: #0b1822;
+  --paper-2: #102433;
+  --receipt: #0b1822;
+  --receipt-2: #102433;
+  --neon: #ee4d2d;
+  --neon-deep: #d73211;
+  --coin: #f0c14a;
+  --teak: #171717;
+  --border: #2c4558;
+  --shadow-card: 0 16px 40px rgba(0, 0, 0, 0.35);
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-canvas: var(--canvas);
+  --color-flame: var(--flame);
+  --color-flame-deep: var(--flame-deep);
+  --color-ink: var(--ink);
+  --color-gold: var(--gold);
+  --color-jade: var(--jade);
+  --color-sky: var(--sky);
+  --color-mist: var(--mist);
+  --color-mute: var(--mute);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-receipt: var(--receipt);
+  --color-receipt-2: var(--receipt-2);
+  --color-neon: var(--neon);
+  --color-neon-deep: var(--neon-deep);
+  --color-coin: var(--coin);
+  --color-teak: var(--teak);
+  --color-border: var(--border);
+  --font-sans: var(--font-anuphan), "Segoe UI", sans-serif;
+  --font-display: var(--font-taviraj), serif;
+  --font-mono: var(--font-plex), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  min-height: 100%;
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(900px 420px at 8% -8%, rgba(238, 77, 45, 0.22), transparent 52%),
+    radial-gradient(720px 360px at 100% 0%, rgba(37, 99, 235, 0.14), transparent 46%),
+    var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+option {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+
+::selection {
+  background: var(--flame);
+  color: white;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+a,
+button,
+[role="button"],
+label[for] {
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--flame);
+  outline-offset: 2px;
+}
+
+.aurora-blob {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(60px);
+  opacity: 0.4;
+  animation: aurora-float 14s ease-in-out infinite;
+}
+
+.aurora-a {
+  width: 420px;
+  height: 420px;
+  background: var(--flame);
+  top: -120px;
+  left: -80px;
+}
+
+.aurora-b {
+  width: 340px;
+  height: 340px;
+  background: var(--gold);
+  right: -80px;
+  top: 20%;
+  animation-delay: -4s;
+}
+
+.aurora-c {
+  width: 280px;
+  height: 280px;
+  background: var(--sky);
+  left: 30%;
+  bottom: -80px;
+  animation-delay: -8s;
+}
+
+@keyframes aurora-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(24px, -18px, 0) scale(1.08);
+  }
+}
+
+.spotlight-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight-card::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    200px circle at var(--spot-x, 50%) var(--spot-y, 0%),
+    rgba(238, 77, 45, 0.22),
+    transparent 55%
+  );
+}
+
+.field {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--paper-2);
+  color: var(--ink);
+  padding: 0.7rem 1rem;
+  outline: none;
+  transition: box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.field:focus {
+  border-color: var(--flame);
+  box-shadow: 0 0 0 3px rgba(238, 77, 45, 0.15);
+}
+
+.ticket {
+  background: var(--paper-2);
+  border: 1px solid var(--border);
+}
+
+.btn {
+  display: inline-flex;
+  min-height: 44px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.animated-list > * {
+  animation: list-in 0.4s ease both;
+}
+
+.animated-list > *:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.animated-list > *:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.animated-list > *:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.animated-list > *:nth-child(5) {
+  animation-delay: 0.2s;
+}
+.animated-list > *:nth-child(6) {
+  animation-delay: 0.25s;
+}
+
+@keyframes list-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gradient-text {
+  background: linear-gradient(120deg, var(--flame) 0%, #ff8a65 42%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.admin-shell {
+  min-height: 100%;
+}
+
+.admin-table {
+  width: 100%;
+  min-width: 800px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.admin-table caption {
+  caption-side: bottom;
+}
+
+.admin-table th {
+  padding: 0.75rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mute);
+  background: var(--mist);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.admin-table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.admin-table tbody tr {
+  transition: background 180ms ease;
+}
+
+.admin-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--mist) 45%, transparent);
+}
+
+.admin-table tbody tr:hover {
+  background: color-mix(in srgb, var(--flame) 12%, var(--paper-2));
+}
+
+.admin-table tbody tr[data-risk="true"] {
+  background: color-mix(in srgb, var(--flame) 16%, var(--paper-2));
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

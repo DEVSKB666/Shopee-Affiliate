@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  MEMBER
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  BANNED
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String       @id @default(cuid())
+  username     String       @unique
+  displayName  String
+  passwordHash String?
+  contact      String?
+  avatarUrl    String?
+  adminNote    String?
+  warnCount    Int          @default(0)
+  facebookId   String?
+  role         Role         @default(MEMBER)
+  status       UserStatus   @default(PENDING)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  accounts     Account[]
+  links        DailyLink[]
+  proofs       ClickProof[]
+  payments     Payment[]
+
+  @@index([facebookId])
+}
+
+model Account {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model DailyLink {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workDate  DateTime     @db.Date
+  title     String
+  url       String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  proofs    ClickProof[]
+
+  @@unique([userId, workDate])
+  @@index([workDate])
+}
+
+model ClickProof {
+  id          String    @id @default(cuid())
+  dailyLinkId String
+  dailyLink   DailyLink @relation(fields: [dailyLinkId], references: [id], onDelete: Cascade)
+  clickerId   String
+  clicker     User      @relation(fields: [clickerId], references: [id], onDelete: Cascade)
+  workDate    DateTime  @db.Date
+  imageUrl    String
+  disputed    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@unique([dailyLinkId, clickerId])
+  @@index([clickerId, workDate])
+  @@index([workDate])
+}
+
+model Payment {
+  id         String        @id @default(cuid())
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monthKey   String
+  status     PaymentStatus @default(PENDING)
+  slipUrl    String?
+  createdAt  DateTime      @default(now())
+  reviewedAt DateTime?
+
+  @@unique([userId, monthKey])
+  @@index([monthKey])
+}
+
+model Setting {
+  id                     String  @id @default("default")
+  siteName               String  @default("Support Link")
+  tagline                String  @default("กลุ่มแลกเปลี่ยนลิงก์ Shopee Affiliate")
+  heroTitle              String  @default("บูสต์ยอด Shopee Affiliate")
+  heroSubtitle           String  @default("ระบบแลกคลิกที่โปร่งใส เช็กได้ว่าใครกดจริง ไม่ต้องไล่ทักทีละคน")
+  metaTitle              String  @default("Support Link — Shopee Affiliate")
+  metaDescription        String  @default("กลุ่มแลกเปลี่ยนลิงก์ Shopee Affiliate ส่งลิงก์ กดคืน ดูรายงานได้ทันที")
+  contactNote            String  @default("หลังสมัคร ไอดีจะรออนุมัติ กรุณาโอนค่าสมาชิกแล้วรอแอดมินเปิดระบบ")
+  announcement           String  @default("")
+  logoUrl                String  @default("")
+  faviconUrl             String  @default("")
+  heroImageUrl           String  @default("")
+  qrImageUrl             String  @default("")
+  adminFacebook          String  @default("")
+  registrationOpen       Boolean @default(true)
+  requirePayment         Boolean @default(true)
+  autoActivateOnRegister Boolean @default(false)
+  maxMembers             Int     @default(0)
+  facebookLoginEnabled   Boolean @default(false)
+  lineLoginEnabled       Boolean @default(false)
+  googleLoginEnabled     Boolean @default(false)
+  linksPerDay            Int     @default(1)
+  inviteCodeRequired     Boolean @default(false)
+  inviteCode             String  @default("")
+  notifyEnabled          Boolean @default(false)
+  notifyWebhook          String  @default("")
+  allowedDomains         String  @default("shope.ee,shopee.co.th,facebook.com,instagram.com,tiktok.com")
+  rulesText              String  @default("ส่งลิงก์ภายในเที่ยง กดคืนภายในห้าทุ่ม ไม่กดคืน 1 วัน = เตือน 2 วัน = พักไอดี")
+  missDaysWarn           Int     @default(1)
+  missDaysSuspend        Int     @default(2)
+  submitHour             Int     @default(12)
+  proofHour              Int     @default(22)
+  fee                    Int     @default(59)
+  bankName               String  @default("ธนาคารกรุงไทย")
+  bankAccount            String  @default("000-0-00000-0")
+  accountName            String  @default("ผู้ดูแลระบบ")
+  timezone               String  @default("Asia/Bangkok")
+}
