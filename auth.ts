@@ -142,16 +142,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
 
       if (user) {
+        token.sub = user.id;
         token.role = user.role;
         token.status = user.status;
         token.username = user.username;
       }
+      if (!token.sub) return null;
+      const current = await prisma.user.findUnique({
+        where: { id: token.sub },
+        select: { role: true, status: true, username: true, displayName: true },
+      });
+      if (!current || current.status === "BANNED") return null;
+      token.role = current.role;
+      token.status = current.status;
+      token.username = current.username;
+      token.name = current.displayName;
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub ?? "";
-        session.user.role = (token.role as "ADMIN" | "MEMBER") ?? "MEMBER";
+        session.user.role = (token.role as "ADMIN" | "MODERATOR" | "MEMBER") ?? "MEMBER";
         session.user.status =
           (token.status as "PENDING" | "ACTIVE" | "INACTIVE" | "BANNED") ?? "PENDING";
         session.user.username = String(token.username ?? "");

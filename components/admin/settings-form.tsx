@@ -6,6 +6,7 @@ import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { ImageUpload } from "@/components/ui/image-upload";
 import type { Setting } from "@/generated/prisma/client";
 import { Save } from "lucide-react";
 
@@ -69,7 +70,7 @@ export function SettingsForm({ settings }: { settings: Setting }) {
           defaultValue={settings.allowedDomains}
           className="sm:col-span-2"
         />
-        <Field label="ลิงก์ต่อวัน" name="linksPerDay" type="number" defaultValue={settings.linksPerDay} />
+        <div className="text-sm text-mute">ลิงก์ต่อวัน: 1 ลิงก์<input type="hidden" name="linksPerDay" value="1" /></div>
         <Field label="ชั่วโมงตัดส่งลิงก์" name="submitHour" type="number" defaultValue={settings.submitHour} />
         <Field label="ชั่วโมงตัดกดคืน" name="proofHour" type="number" defaultValue={settings.proofHour} />
         <Field label="วันที่แล้วเตือน" name="missDaysWarn" type="number" defaultValue={settings.missDaysWarn} />
@@ -134,14 +135,7 @@ function Field({
 
 function FileField({ label, name, current }: { label: string; name: string; current: string }) {
   return (
-    <label className="block sm:col-span-2">
-      <span className="mb-1 block text-xs text-mute">{label}</span>
-      {current ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={current} alt="" className="mb-2 h-16 rounded-xl object-contain" />
-      ) : null}
-      <input name={name} type="file" accept="image/*" />
-    </label>
+    <div className="sm:col-span-2"><ImageUpload name={name} label={label} current={current} /></div>
   );
 }
 

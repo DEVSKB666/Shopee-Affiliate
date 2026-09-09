@@ -1,10 +1,12 @@
 import { BrandMark } from "@/components/brand";
+import { auth } from "@/auth";
 import { AdminNav } from "@/components/admin/nav";
 import { LiveClock } from "@/components/live-clock";
 import { getSettings } from "@/lib/session";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const settings = await getSettings();
+  const session = await auth();
 
   return (
     <div className="admin-shell">
@@ -14,11 +16,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <BrandMark settings={settings} compact />
             <p className="mt-1 text-[11px] text-mute">แผงควบคุมแอดมิน</p>
             <LiveClock className="mt-2 text-[11px] text-mute" />
-            <AdminNav />
+            <AdminNav role={session?.user.role} />
           </div>
         </aside>
         <div className="min-w-0 flex-1">
-          <AdminNav compact />
+          <AdminNav compact role={session?.user.role} />
           {children}
         </div>
       </div>

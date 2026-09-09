@@ -1,8 +1,5 @@
-import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
-import { authConfig } from "@/auth.config";
-
-const { auth } = NextAuth(authConfig);
+import { auth } from "@/auth";
 
 export const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
@@ -17,14 +14,23 @@ export const proxy = auth((req) => {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  if (pathname.startsWith("/admin") && user?.role !== "ADMIN") {
+  if (pathname.startsWith("/admin") && user?.role !== "ADMIN" && user?.role !== "MODERATOR") {
     return NextResponse.redirect(new URL("/app", req.url));
+  }
+
+  if (pathname.startsWith("/admin/settings") && user?.role !== "ADMIN") {
+    return NextResponse.redirect(new URL("/admin", req.url));
+  }
+
+  if (pathname.startsWith("/app") && (user?.role === "ADMIN" || user?.role === "MODERATOR")) {
+    return NextResponse.redirect(new URL("/admin", req.url));
   }
 
   if (
     pathname.startsWith("/app") &&
     user &&
     user.role !== "ADMIN" &&
+    user.role !== "MODERATOR" &&
     user.status !== "ACTIVE" &&
     !pathname.startsWith("/app/pay") &&
     !pathname.startsWith("/app/profile")
@@ -35,9 +41,9 @@ export const proxy = auth((req) => {
   if (
     pathname.startsWith("/pending") &&
     user &&
-    (user.status === "ACTIVE" || user.role === "ADMIN")
+    (user.status === "ACTIVE" || user.role === "ADMIN" || user.role === "MODERATOR")
   ) {
-    return NextResponse.redirect(new URL("/app", req.url));
+    return NextResponse.redirect(new URL(user.role === "ADMIN" || user.role === "MODERATOR" ? "/admin" : "/app", req.url));
   }
 
   return NextResponse.next();

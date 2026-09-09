@@ -6,6 +6,7 @@ import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { Save } from "lucide-react";
 
 export function ProfileForm({
@@ -39,10 +40,7 @@ export function ProfileForm({
         <span className="mb-1 block text-xs text-mute">ช่องทางติดต่อ</span>
         <input name="contact" defaultValue={profile.contact ?? ""} className="field" />
       </label>
-      <label className="block">
-        <span className="mb-1 block text-xs text-mute">รูปโปรไฟล์</span>
-        <input name="avatar" type="file" accept="image/*" />
-      </label>
+      <ImageUpload name="avatar" label="รูปโปรไฟล์" current={profile.avatarUrl} disabled={pending} />
       {profile.facebookId ? (
         <Chip tone="jade">ผูก Facebook แล้ว</Chip>
       ) : null}

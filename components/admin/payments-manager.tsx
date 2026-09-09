@@ -22,7 +22,7 @@ function paymentChip(status?: string | null) {
   return <Chip>ยังไม่ส่ง</Chip>;
 }
 
-export function PaymentsManager({ initialRows, initialMonth }: { initialRows: Row[]; initialMonth: string }) {
+export function PaymentsManager({ initialRows, initialMonth, canManage }: { initialRows: Row[]; initialMonth: string; canManage: boolean }) {
   const [monthKey, setMonthKey] = useState(initialMonth);
   const [rows, setRows] = useState<Row[]>(initialRows);
   const [pending, start] = useTransition();
@@ -83,7 +83,7 @@ export function PaymentsManager({ initialRows, initialMonth }: { initialRows: Ro
                     </div>
                   </td>
                   <td>
-                    {row.payment && row.payment.status === "PENDING" ? (
+                    {canManage && row.payment && row.payment.status === "PENDING" ? (
                       <div className="flex flex-wrap justify-end gap-1">
                         <Button
                           type="button"

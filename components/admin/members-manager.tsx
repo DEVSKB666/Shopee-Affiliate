@@ -10,6 +10,7 @@ import {
   setUserStatus,
 } from "@/actions/admin";
 import { StatusChip } from "@/components/admin/status-chip";
+import { RoleChip } from "@/components/admin/role-chip";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +18,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TableShell } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { PASSWORD_MIN_LENGTH } from "@/lib/validation";
 import { useLivePoll } from "@/hooks/use-live-poll";
 import { Ban, Download, Pause, Pencil, Search, Trash2, UserPlus, UserRound } from "lucide-react";
 
@@ -44,9 +47,11 @@ function formatJoined(value: Date | string) {
 export function MembersManager({
   initialRows,
   initialCounts,
+  canManage,
 }: {
   initialRows: Row[];
   initialCounts: Counts;
+  canManage: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -84,7 +89,7 @@ export function MembersManager({
         </a>
       </div>
 
-      <Card>
+      <Card className={!canManage ? "hidden" : undefined}>
         <h2 className="font-semibold">เพิ่มสมาชิกแทนแอดมิน</h2>
         <form
           className="mt-3"
@@ -107,13 +112,13 @@ export function MembersManager({
             </label>
             <label className="block">
               <span className="mb-1 block text-xs text-mute">รหัสผ่าน</span>
-              <input name="password" required minLength={6} placeholder="รหัสผ่าน" className="field" />
+              <input name="password" type="password" required minLength={PASSWORD_MIN_LENGTH} placeholder="อย่างน้อย 4 ตัวอักษร" className="field" />
             </label>
             <label className="block">
               <span className="mb-1 block text-xs text-mute">ช่องทางติดต่อ</span>
               <input name="contact" placeholder="Line / Facebook" className="field" />
             </label>
-            <input name="avatar" type="file" accept="image/*" className="sm:col-span-2 text-sm" />
+            <div className="sm:col-span-2"><ImageUpload name="avatar" label="รูปโปรไฟล์" disabled={pending} /></div>
           </div>
           <Button
             type="submit"
@@ -180,6 +185,7 @@ export function MembersManager({
           <TableShell caption="ตารางสมาชิก">
             <thead>
               <tr>
+                <th>บทบาท</th>
                 <th>สมาชิก</th>
                 <th>ติดต่อ</th>
                 <th>สถานะ</th>
@@ -191,6 +197,7 @@ export function MembersManager({
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id}>
+                  <td><RoleChip role={row.role} /></td>
                   <td>
                     <Link href={`/admin/members/${row.id}`} className="flex min-w-0 items-center gap-3">
                       {row.avatarUrl ? (
@@ -217,7 +224,7 @@ export function MembersManager({
                   <td className="text-sm tabular-nums">{row.warnCount}</td>
                   <td className="text-sm whitespace-nowrap text-mute">{formatJoined(row.createdAt)}</td>
                   <td>
-                    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+                    <div className={canManage ? "flex items-center justify-end gap-1 whitespace-nowrap" : "hidden"}>
                       <Link
                         href={`/admin/members/${row.id}`}
                         aria-label={`แก้ไข ${row.displayName}`}

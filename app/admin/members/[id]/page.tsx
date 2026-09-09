@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@/auth";
 import { getMemberDetail } from "@/actions/admin";
 import { MemberEditor } from "@/components/admin/member-editor";
 import { ArrowLeft } from "lucide-react";
@@ -12,8 +13,9 @@ export default async function AdminMemberDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const session = await auth();
   const member = await getMemberDetail(id);
-  if (!member || member.role !== "MEMBER") notFound();
+  if (!member || (member.role !== "MEMBER" && member.role !== "MODERATOR")) notFound();
 
   return (
     <div className="space-y-4">
@@ -22,6 +24,7 @@ export default async function AdminMemberDetailPage({
         รายชื่อสมาชิก
       </Link>
       <MemberEditor
+        canManage={session?.user.role === "ADMIN"}
         member={{
           id: member.id,
           displayName: member.displayName,
@@ -29,6 +32,7 @@ export default async function AdminMemberDetailPage({
           contact: member.contact ?? "",
           adminNote: member.adminNote ?? "",
           status: member.status,
+          role: member.role,
           warnCount: member.warnCount,
           avatarUrl: member.avatarUrl,
           facebookId: member.facebookId,
@@ -42,6 +46,7 @@ export default async function AdminMemberDetailPage({
           links: member.links.map((link) => ({
             id: link.id,
             title: link.title,
+            url: link.url,
             workDate: link.workDate.toISOString().slice(0, 10),
           })),
         }}

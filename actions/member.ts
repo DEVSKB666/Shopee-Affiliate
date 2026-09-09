@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { getPaymentBoard, getMemberHomeData } from "@/lib/queries";
 import { getSettings, requireActiveMember, requireSessionUser } from "@/lib/session";
 import { saveImage } from "@/lib/upload";
+import { assertImageFormSize, monthKeySchema } from "@/lib/validation";
 
 function asWorkDate(iso?: string) {
   return dateFromISO(iso && /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : bangkokDateISO());
@@ -85,7 +86,7 @@ export async function getPendingOwners() {
   const workDate = asWorkDate();
 
   const links = await prisma.dailyLink.findMany({
-    where: { workDate, userId: { not: user.id } },
+    where: { workDate, userId: { not: user.id }, user: { role: "MEMBER", status: "ACTIVE" } },
     include: {
       user: { select: { id: true, displayName: true, avatarUrl: true } },
       proofs: { where: { clickerId: user.id }, select: { id: true } },
@@ -112,8 +113,8 @@ export async function searchOwnerLink(ownerId: string) {
     return { ok: false as const, message: "ไม่ต้องกดลิงก์ของตัวเอง" };
   }
 
-  const link = await prisma.dailyLink.findUnique({
-    where: { userId_workDate: { userId: ownerId, workDate } },
+  const link = await prisma.dailyLink.findFirst({
+    where: { userId: ownerId, workDate, user: { role: "MEMBER", status: "ACTIVE" } },
     include: {
       user: { select: { displayName: true, avatarUrl: true } },
       proofs: { where: { clickerId: user.id }, take: 1 },
@@ -142,6 +143,7 @@ export async function searchOwnerLink(ownerId: string) {
 
 export async function submitProof(formData: FormData) {
   try {
+    assertImageFormSize(formData);
     const user = await requireActiveMember();
     const settings = await getSettings();
     assertCanSubmitProof(settings.proofHour);
@@ -152,10 +154,11 @@ export async function submitProof(formData: FormData) {
     if (!file) return { ok: false as const, message: "กรุณาแนบรูปหลักฐาน" };
 
     const workDate = asWorkDate();
-    const link = await prisma.dailyLink.findUnique({
-      where: { userId_workDate: { userId: ownerId, workDate } },
+    const link = await prisma.dailyLink.findFirst({
+      where: { userId: ownerId, workDate, user: { role: "MEMBER", status: "ACTIVE" } },
     });
     if (!link) return { ok: false as const, message: "ยังไม่มีลิงก์ของเพื่อนคนนี้" };
+    if (link.userId === user.id) return { ok: false as const, message: "ไม่สามารถส่งหลักฐานให้ลิงก์ของตัวเอง" };
 
     const imageUrl = await saveImage(file, "proofs");
 
@@ -172,9 +175,59 @@ export async function submitProof(formData: FormData) {
       },
     });
 
-    return { ok: true as const, message: "ส่งงานแล้ว" };
+    return { ok: true as const, message: "ส่งงานแล้ว", imageUrl };
   } catch (error) {
     return { ok: false as const, message: error instanceof Error ? error.message : "ส่งงานไม่สำเร็จ" };
+  }
+}
+
+export async function updateMyProof(formData: FormData) {
+  try {
+    assertImageFormSize(formData);
+    const user = await requireActiveMember();
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { status: true },
+    });
+    if (currentUser?.status !== "ACTIVE") {
+      return { ok: false as const, message: "ไอดีนี้ยังใช้ระบบคลิกไม่ได้" };
+    }
+
+    const proofId = formData.get("proofId");
+    const file = formData.get("proof");
+    if (typeof proofId !== "string" || !proofId.trim()) {
+      return { ok: false as const, message: "ไม่พบหลักฐานที่ต้องการแก้ไข" };
+    }
+    if (!(file instanceof File) || file.size === 0) {
+      return { ok: false as const, message: "กรุณาแนบรูปหลักฐานใหม่" };
+    }
+
+    const proof = await prisma.clickProof.findFirst({
+      where: { id: proofId, clickerId: user.id },
+      select: { id: true, workDate: true },
+    });
+    if (!proof) {
+      return { ok: false as const, message: "แก้ไขได้เฉพาะหลักฐานที่คุณอัปโหลดเองเท่านั้น" };
+    }
+    const workDate = asWorkDate();
+    if (proof.workDate.getTime() !== workDate.getTime()) {
+      return { ok: false as const, message: "แก้ไขได้เฉพาะหลักฐานของวันนี้" };
+    }
+    const settings = await getSettings();
+    assertCanSubmitProof(settings.proofHour);
+
+    const imageUrl = await saveImage(file, "proofs");
+    // Keep ownership in the write condition, and retain any report for admin review.
+    const result = await prisma.clickProof.updateMany({
+      where: { id: proof.id, clickerId: user.id, workDate },
+      data: { imageUrl },
+    });
+    if (result.count !== 1) {
+      return { ok: false as const, message: "หลักฐานนี้ถูกเปลี่ยนแปลงแล้ว กรุณารีเฟรชหน้า" };
+    }
+    return { ok: true as const, message: "เปลี่ยนรูปหลักฐานแล้ว", imageUrl };
+  } catch (error) {
+    return { ok: false as const, message: error instanceof Error ? error.message : "เปลี่ยนรูปไม่สำเร็จ" };
   }
 }
 
@@ -186,6 +239,7 @@ export async function getReport(dateISO: string) {
     where: { userId_workDate: { userId: user.id, workDate } },
     include: {
       proofs: {
+        where: { clicker: { role: "MEMBER", status: "ACTIVE" } },
         include: { clicker: { select: { displayName: true, avatarUrl: true } } },
         orderBy: { createdAt: "asc" },
       },
@@ -227,29 +281,31 @@ export async function getMyPending(dateISO: string) {
       orderBy: { displayName: "asc" },
     }),
     prisma.dailyLink.findMany({
-      where: { workDate, userId: { not: user.id } },
+      where: { workDate, userId: { not: user.id }, user: { role: "MEMBER", status: "ACTIVE" } },
       select: { userId: true, id: true },
     }),
     prisma.clickProof.findMany({
       where: { clickerId: user.id, workDate },
-      select: { dailyLink: { select: { userId: true } }, imageUrl: true },
+      select: { id: true, dailyLink: { select: { userId: true } }, imageUrl: true },
     }),
   ]);
 
   const linkByOwner = new Map(links.map((link) => [link.userId, link.id]));
   const proofByOwner = new Map(
-    proofs.map((proof) => [proof.dailyLink.userId, proof.imageUrl]),
+    proofs.map((proof) => [proof.dailyLink.userId, proof]),
   );
 
   return members.map((member) => {
     const hasLink = linkByOwner.has(member.id);
-    const imageUrl = proofByOwner.get(member.id) ?? null;
+    const proof = proofByOwner.get(member.id);
+    const imageUrl = proof?.imageUrl ?? null;
     return {
       ownerId: member.id,
       displayName: member.displayName,
       avatarUrl: member.avatarUrl,
       hasLink,
       done: Boolean(imageUrl),
+      proofId: proof?.id ?? null,
       imageUrl,
     };
   });
@@ -280,12 +336,12 @@ export async function getGroupStats(mode: "daily" | "monthly", dateISO?: string)
 
   const [links, proofs] = await Promise.all([
     prisma.dailyLink.findMany({
-      where: { workDate: { gte: start, lte: end } },
+      where: { workDate: { gte: start, lte: end }, user: { role: "MEMBER", status: "ACTIVE" } },
       select: { userId: true, workDate: true },
     }),
     prisma.clickProof.findMany({
-      where: { workDate: { gte: start, lte: end } },
-      select: { clickerId: true, workDate: true },
+      where: { workDate: { gte: start, lte: end }, clicker: { role: "MEMBER", status: "ACTIVE" }, dailyLink: { user: { role: "MEMBER", status: "ACTIVE" } } },
+      select: { clickerId: true, workDate: true, dailyLink: { select: { userId: true } } },
     }),
   ]);
 
@@ -299,6 +355,7 @@ export async function getGroupStats(mode: "daily" | "monthly", dateISO?: string)
 
   const proofCount = new Map<string, number>();
   for (const proof of proofs) {
+    if (proof.clickerId === proof.dailyLink.userId) continue;
     proofCount.set(proof.clickerId, (proofCount.get(proof.clickerId) ?? 0) + 1);
   }
 
@@ -332,12 +389,13 @@ export async function getGroupStats(mode: "daily" | "monthly", dateISO?: string)
 
 export async function submitPayment(formData: FormData) {
   try {
+    assertImageFormSize(formData);
     const user = await requireSessionUser();
     if (user.role === "ADMIN") {
       return { ok: false as const, message: "แอดมินไม่ต้องแจ้งโอน" };
     }
 
-    const monthKey = String(formData.get("monthKey") ?? bangkokMonthKey());
+    const monthKey = monthKeySchema.parse(String(formData.get("monthKey") ?? bangkokMonthKey()));
     const file = formData.get("slip") as File | null;
     if (!file) return { ok: false as const, message: "กรุณาแนบสลิป" };
 
@@ -375,7 +433,7 @@ export async function disputeProof(proofId: string) {
       where: { id: proofId },
       data: { disputed: true },
     });
-    return { ok: true as const, message: "แจ้งแอดมินแล้วว่าสลิปนี้ไม่ใช่ของเรา" };
+    return { ok: true as const, message: "แจ้งปัญหาหลักฐานแล้ว รอแอดมินตรวจสอบ" };
   } catch (error) {
     return { ok: false as const, message: error instanceof Error ? error.message : "แจ้งไม่สำเร็จ" };
   }
@@ -383,6 +441,7 @@ export async function disputeProof(proofId: string) {
 
 export async function updateMyProfile(formData: FormData) {
   try {
+    assertImageFormSize(formData);
     const user = await requireSessionUser();
     const displayName = String(formData.get("displayName") ?? "").trim();
     const contact = String(formData.get("contact") ?? "").trim();

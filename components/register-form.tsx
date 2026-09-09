@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { registerUser } from "@/actions/auth";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
+import { PASSWORD_MIN_LENGTH } from "@/lib/validation";
 import { KeyRound, Lock, Phone, UserPlus, UserRound } from "lucide-react";
 
 export function RegisterForm({
@@ -50,7 +51,7 @@ export function RegisterForm({
           <Lock className="h-3.5 w-3.5" aria-hidden />
           รหัสผ่าน
         </span>
-        <input name="password" type="password" required minLength={6} className="field" />
+        <input name="password" type="password" required minLength={PASSWORD_MIN_LENGTH} className="field" placeholder="อย่างน้อย 4 ตัวอักษร" />
       </label>
       <label className="block">
         <span className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-mute">

@@ -30,7 +30,7 @@ export default async function AppShell({ children }: { children: React.ReactNode
         </Link>
         <div className="flex items-center gap-2">
           <LiveClock className="mr-1 hidden text-[11px] text-mute sm:inline-flex" />
-          {session?.user.role === "ADMIN" ? (
+          {session?.user.role === "ADMIN" || session?.user.role === "MODERATOR" ? (
             <Link
               href="/admin"
               className="inline-flex min-h-11 items-center gap-1 rounded-full bg-flame px-3 text-xs text-white"

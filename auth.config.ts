@@ -17,7 +17,7 @@ export const authConfig = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub ?? "";
-        session.user.role = (token.role as "ADMIN" | "MEMBER") ?? "MEMBER";
+        session.user.role = (token.role as "ADMIN" | "MODERATOR" | "MEMBER") ?? "MEMBER";
         session.user.status =
           (token.status as "PENDING" | "ACTIVE" | "INACTIVE" | "BANNED") ?? "PENDING";
         session.user.username = String(token.username ?? "");

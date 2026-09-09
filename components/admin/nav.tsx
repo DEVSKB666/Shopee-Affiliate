@@ -20,13 +20,14 @@ function isActive(pathname: string, href: string, exact?: boolean) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AdminNav({ compact = false }: { compact?: boolean }) {
+export function AdminNav({ compact = false, role }: { compact?: boolean; role?: "ADMIN" | "MODERATOR" | "MEMBER" }) {
   const pathname = usePathname();
+  const links = role === "ADMIN" ? LINKS : LINKS.filter((item) => item.href !== "/admin/settings");
 
   if (compact) {
     return (
       <div className="mb-4 flex gap-2 overflow-x-auto lg:hidden">
-        {LINKS.map((item) => (
+        {links.map((item) => (
           <Link
             key={item.href}
             href={item.href}
@@ -47,7 +48,7 @@ export function AdminNav({ compact = false }: { compact?: boolean }) {
 
   return (
     <nav className="mt-6 space-y-1">
-      {LINKS.map((item) => (
+      {links.map((item) => (
         <Link
           key={item.href}
           href={item.href}

@@ -19,10 +19,12 @@ export function LateBoard({
   initialRows,
   initialDisputed,
   initialDate,
+  canManage,
 }: {
   initialRows: LateRow[];
   initialDisputed: DisputeRow[];
   initialDate: string;
+  canManage: boolean;
 }) {
   const [date, setDate] = useState(initialDate);
   const [rows, setRows] = useState<LateRow[]>(initialRows);
@@ -64,7 +66,7 @@ export function LateBoard({
             <Button type="button" tone="ghost" onClick={() => load()} icon={<Search className="h-4 w-4" aria-hidden />}>
               เช็กวันนี้
             </Button>
-            <Button
+            {canManage ? <Button
               type="button"
               tone="gold"
               disabled={pending}
@@ -77,7 +79,7 @@ export function LateBoard({
               }
             >
               ออกใบเตือนคนที่ค้างวันนี้
-            </Button>
+            </Button> : null}
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <p className="rounded-2xl bg-gold/10 px-4 py-3 text-sm">ยังไม่ส่งลิงก์ {noLink} คน</p>
@@ -123,14 +125,14 @@ export function LateBoard({
       </Card>
 
       <Card padded={false}>
-        <h2 className="px-5 py-4 font-semibold">หลักฐานที่ถูกโหวตว่าไม่ใช่สลิป</h2>
+        <h2 className="px-5 py-4 font-semibold">หลักฐานที่ถูกรายงาน</h2>
         {disputed.length === 0 ? (
           <p className="px-5 pb-5 text-sm text-mute">ยังไม่มีรายการ</p>
         ) : (
-          <TableShell caption="หลักฐานที่ถูกโหวต">
+          <TableShell caption="หลักฐานที่ถูกรายงาน">
             <thead>
               <tr>
-                <th>ผู้โหวต</th>
+                <th>ผู้ส่งหลักฐาน</th>
                 <th>เจ้าของลิงก์</th>
                 <th>จัดการ</th>
               </tr>
@@ -145,19 +147,19 @@ export function LateBoard({
                       <a href={item.imageUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center text-sm font-semibold text-flame hover:underline">
                         เปิดรูป
                       </a>
-                      <Button
+                      {canManage ? <Button
                         type="button"
                         tone="ghost"
                         size="sm"
                         onClick={() =>
                           clearDispute(item.id).then(() => {
-                            toast("เคลียร์แล้ว", "ok");
+                            toast("ปิดการตรวจสอบแล้ว", "ok");
                             load();
                           })
                         }
                       >
-                        เคลียร์
-                      </Button>
+                        ปิดการตรวจสอบ
+                      </Button> : null}
                     </div>
                   </td>
                 </tr>

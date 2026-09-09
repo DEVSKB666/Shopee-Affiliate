@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { PageHeader } from "@/components/ui/page-header";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { useLivePoll } from "@/hooks/use-live-poll";
 import { thaiMonthLabel } from "@/lib/bangkok";
 import type { getPaymentBoard } from "@/lib/queries";
@@ -73,7 +74,7 @@ export function PaymentBoard({ board: initial }: { board: Board }) {
                 }}
               >
                 <input type="hidden" name="monthKey" value={board.monthKey} />
-                <input name="slip" type="file" accept="image/*" required className="block w-full text-sm" />
+                <ImageUpload name="slip" label="สลิปโอนเงิน" required disabled={pending} />
                 <Button type="submit" tone="jade" className="w-full" disabled={pending} icon={<Upload className="h-4 w-4" aria-hidden />}>
                   {pending ? "กำลังส่ง..." : "ส่งสลิป"}
                 </Button>

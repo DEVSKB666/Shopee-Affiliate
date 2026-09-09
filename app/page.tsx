@@ -14,6 +14,7 @@ import {
   MousePointerClick,
   ShieldCheck,
   Wallet,
+  LogIn,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -33,14 +34,19 @@ export default async function HomePage() {
             <BrandMark settings={settings} />
             {session?.user ? (
               <Link
-                href={session.user.role === 'ADMIN' ? '/admin' : '/app'}
+                href={session.user.role === 'ADMIN' || session.user.role === 'MODERATOR' ? '/admin' : '/app'}
                 className="inline-flex min-h-11 items-center rounded-full bg-flame px-4 text-sm font-semibold text-white"
               >
                 ไปแอป
               </Link>
             ) : (
-              <Link href="/login" className="text-sm font-semibold text-flame">
-                เข้าสู่ระบบ
+              <Link
+                href="/login"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-flame/60 bg-flame/10 px-4 text-sm font-semibold text-flame shadow-[0_8px_24px_rgba(238,77,45,0.12)] transition duration-200 hover:bg-flame hover:text-white hover:shadow-[0_10px_28px_rgba(238,77,45,0.24)] sm:px-5"
+                aria-label="เข้าสู่ระบบสมาชิก"
+              >
+                <LogIn className="h-4 w-4" aria-hidden />
+                <span>เข้าสู่ระบบ</span>
               </Link>
             )}
           </div>

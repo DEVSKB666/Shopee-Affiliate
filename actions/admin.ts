@@ -5,12 +5,13 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { bangkokDateISO, dateFromISO, dayPhase } from "@/lib/bangkok";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/session";
-import { checkbox } from "@/lib/settings";
+import { getSettings, requireAdmin, requireStaff } from "@/lib/session";
+import { checkbox, isAllowedLink } from "@/lib/settings";
 import { saveImage } from "@/lib/upload";
+import { passwordSchema, assertImageFormSize } from "@/lib/validation";
 
 export async function getAdminOverview() {
-  await requireAdmin();
+  const staff = await requireStaff();
   const today = dateFromISO(bangkokDateISO());
   const [
     pendingUsers,
@@ -52,14 +53,15 @@ export async function getAdminOverview() {
     slipsPending,
     disputed,
     latest,
+    canManage: staff.role === "ADMIN",
   };
 }
 
 export async function listMembers(query = "", status: "all" | "pending" | "active" | "inactive" | "banned" = "all") {
-  await requireAdmin();
+  await requireStaff();
   return prisma.user.findMany({
     where: {
-      role: "MEMBER",
+      role: { in: ["MEMBER", "MODERATOR"] },
       ...(status === "all" ? {} : { status: status.toUpperCase() as "PENDING" | "ACTIVE" | "INACTIVE" | "BANNED" }),
       ...(query
         ? {
@@ -81,13 +83,14 @@ export async function listMembers(query = "", status: "all" | "pending" | "activ
       status: true,
       warnCount: true,
       facebookId: true,
+      role: true,
       createdAt: true,
     },
   });
 }
 
 export async function getMemberDetail(userId: string) {
-  await requireAdmin();
+  await requireStaff();
   return prisma.user.findUnique({
     where: { id: userId },
     include: {
@@ -98,13 +101,66 @@ export async function getMemberDetail(userId: string) {
   });
 }
 
+const memberLinkSchema = z.object({
+  userId: z.string().trim().min(1).max(100),
+  linkId: z.string().trim().min(1).max(100),
+  title: z.string().trim().min(2, "ใส่หัวข้ออย่างน้อย 2 ตัวอักษร").max(80, "หัวข้อยาวได้ไม่เกิน 80 ตัวอักษร"),
+  url: z.string().trim().url("ลิงก์ไม่ถูกต้อง")
+    .refine((value) => value.startsWith("https://") || value.startsWith("http://"), "ต้องเป็นลิงก์ http หรือ https"),
+});
+
+export async function updateMemberLink(userId: string, linkId: string, formData: FormData) {
+  const sessionAdmin = await requireAdmin();
+  const admin = await prisma.user.findUnique({
+    where: { id: sessionAdmin.id },
+    select: { role: true, status: true },
+  });
+  if (admin?.role !== "ADMIN" || admin.status !== "ACTIVE") {
+    return { ok: false as const, message: "บัญชีนี้ไม่มีสิทธิ์แก้ไขลิงก์" };
+  }
+
+  const parsed = memberLinkSchema.safeParse({
+    userId,
+    linkId,
+    title: formData.get("title"),
+    url: formData.get("url"),
+  });
+  if (!parsed.success) {
+    return { ok: false as const, message: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง" };
+  }
+  const settings = await getSettings();
+  if (!isAllowedLink(parsed.data.url, settings.allowedDomains)) {
+    return { ok: false as const, message: `ลิงก์ต้องเป็นโดเมนที่อนุญาต: ${settings.allowedDomains}` };
+  }
+
+  try {
+    const result = await prisma.dailyLink.updateMany({
+      where: { id: parsed.data.linkId, userId: parsed.data.userId, user: { role: "MEMBER" } },
+      data: { title: parsed.data.title, url: parsed.data.url },
+    });
+    if (result.count === 0) {
+      return { ok: false as const, message: "ไม่พบลิงก์ของสมาชิกนี้ กรุณารีเฟรชหน้า" };
+    }
+  } catch {
+    return { ok: false as const, message: "บันทึกลิงก์ไม่สำเร็จ กรุณาลองอีกครั้ง" };
+  }
+  revalidatePath(`/admin/members/${parsed.data.userId}`);
+  revalidatePath("/app");
+  return { ok: true as const, message: "แก้ไขลิงก์สมาชิกแล้ว" };
+}
+
 export async function createMember(formData: FormData) {
   await requireAdmin();
+  try { assertImageFormSize(formData); } catch (error) {
+    return { ok: false as const, message: (error as Error).message };
+  }
   const displayName = String(formData.get("displayName") ?? "").trim();
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const contact = String(formData.get("contact") ?? "").trim();
-  if (displayName.length < 2 || username.length < 3 || password.length < 6) {
+  const passwordResult = passwordSchema.safeParse(password);
+  if (!passwordResult.success) return { ok: false as const, message: passwordResult.error.issues[0].message };
+  if (displayName.length < 2 || username.length < 3) {
     return { ok: false as const, message: "กรอกชื่อ ยูสเซอร์เนม และรหัสผ่านให้ครบ" };
   }
   const exists = await prisma.user.findUnique({ where: { username } });
@@ -129,7 +185,10 @@ export async function createMember(formData: FormData) {
 }
 
 export async function updateMember(userId: string, formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  try { assertImageFormSize(formData); } catch (error) {
+    return { ok: false as const, message: (error as Error).message };
+  }
   const displayName = String(formData.get("displayName") ?? "").trim();
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
   const contact = String(formData.get("contact") ?? "").trim();
@@ -139,9 +198,26 @@ export async function updateMember(userId: string, formData: FormData) {
     | "ACTIVE"
     | "INACTIVE"
     | "BANNED";
+  const role = String(formData.get("role") ?? "MEMBER") as "MEMBER" | "MODERATOR" | "ADMIN";
   const warnCount = Number(formData.get("warnCount") ?? 0);
   const password = String(formData.get("password") ?? "");
 
+  if (!["MEMBER", "MODERATOR", "ADMIN"].includes(role)) {
+    return { ok: false as const, message: "บทบาทไม่ถูกต้อง" };
+  }
+  const existing = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true } });
+  if (!existing) return { ok: false as const, message: "ไม่พบสมาชิก" };
+  if (userId === admin.id && role !== "ADMIN") {
+    return { ok: false as const, message: "ไม่สามารถลดบทบาทบัญชีตัวเองได้" };
+  }
+  if (existing.role === "ADMIN" && role !== "ADMIN") {
+    const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
+    if (adminCount <= 1) return { ok: false as const, message: "ต้องมี Admin อย่างน้อย 1 บัญชี" };
+  }
+
+  if (password && !passwordSchema.safeParse(password).success) {
+    return { ok: false as const, message: "รหัสผ่านอย่างน้อย 4 ตัวอักษร" };
+  }
   const file = formData.get("avatar") as File | null;
   const avatarUrl = file && file.size > 0 ? await saveImage(file, "avatars") : undefined;
 
@@ -152,10 +228,11 @@ export async function updateMember(userId: string, formData: FormData) {
       username,
       contact: contact || null,
       adminNote: adminNote || null,
-      status,
+      status: role === "ADMIN" || role === "MODERATOR" ? "ACTIVE" : status,
+      role,
       warnCount: Number.isFinite(warnCount) ? warnCount : 0,
       ...(avatarUrl ? { avatarUrl } : {}),
-      ...(password.length >= 6 ? { passwordHash: await bcrypt.hash(password, 10) } : {}),
+      ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {}),
     },
   });
   revalidatePath("/admin/members");
@@ -165,6 +242,8 @@ export async function updateMember(userId: string, formData: FormData) {
 
 export async function setUserStatus(userId: string, status: "ACTIVE" | "INACTIVE" | "BANNED" | "PENDING") {
   await requireAdmin();
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+  if (!target || target.role === "ADMIN") return { ok: false as const, message: "ไม่สามารถแก้สถานะ Admin จากหน้านี้ได้" };
   await prisma.user.update({ where: { id: userId }, data: { status } });
   revalidatePath("/admin");
   revalidatePath("/admin/members");
@@ -172,13 +251,13 @@ export async function setUserStatus(userId: string, status: "ACTIVE" | "INACTIVE
 }
 
 export async function countMembers() {
-  await requireAdmin();
+  await requireStaff();
   const [all, pending, active, inactive, banned] = await Promise.all([
-    prisma.user.count({ where: { role: "MEMBER" } }),
-    prisma.user.count({ where: { role: "MEMBER", status: "PENDING" } }),
-    prisma.user.count({ where: { role: "MEMBER", status: "ACTIVE" } }),
-    prisma.user.count({ where: { role: "MEMBER", status: "INACTIVE" } }),
-    prisma.user.count({ where: { role: "MEMBER", status: "BANNED" } }),
+    prisma.user.count({ where: { role: { in: ["MEMBER", "MODERATOR"] } } }),
+    prisma.user.count({ where: { role: { in: ["MEMBER", "MODERATOR"] }, status: "PENDING" } }),
+    prisma.user.count({ where: { role: { in: ["MEMBER", "MODERATOR"] }, status: "ACTIVE" } }),
+    prisma.user.count({ where: { role: { in: ["MEMBER", "MODERATOR"] }, status: "INACTIVE" } }),
+    prisma.user.count({ where: { role: { in: ["MEMBER", "MODERATOR"] }, status: "BANNED" } }),
   ]);
   return { all, pending, active, inactive, banned };
 }
@@ -206,7 +285,7 @@ export async function deleteMember(userId: string) {
 }
 
 export async function listPayments(monthKey: string) {
-  await requireAdmin();
+  await requireStaff();
   const members = await prisma.user.findMany({
     where: { role: "MEMBER" },
     orderBy: { displayName: "asc" },
@@ -248,7 +327,7 @@ export async function reviewPayment(paymentId: string, status: "APPROVED" | "REJ
 }
 
 export async function getLateBoard(dateISO?: string) {
-  await requireAdmin();
+  await requireStaff();
   const workDate = dateFromISO(dateISO ?? bangkokDateISO());
   const settings = await prisma.setting.findUnique({ where: { id: "default" } });
 
@@ -258,24 +337,25 @@ export async function getLateBoard(dateISO?: string) {
       select: { id: true, displayName: true, warnCount: true },
       orderBy: { displayName: "asc" },
     }),
-    prisma.dailyLink.findMany({ where: { workDate }, select: { userId: true } }),
+    prisma.dailyLink.findMany({ where: { workDate, user: { role: "MEMBER", status: "ACTIVE" } }, select: { userId: true } }),
     prisma.clickProof.findMany({
-      where: { workDate },
-      select: { clickerId: true },
+      where: { workDate, clicker: { role: "MEMBER", status: "ACTIVE" }, dailyLink: { user: { role: "MEMBER", status: "ACTIVE" } } },
+      select: { clickerId: true, dailyLink: { select: { userId: true } } },
     }),
   ]);
 
   const submitted = new Set(links.map((link) => link.userId));
   const clickedCount = new Map<string, number>();
   for (const proof of proofs) {
+    if (proof.clickerId === proof.dailyLink.userId) continue;
     clickedCount.set(proof.clickerId, (clickedCount.get(proof.clickerId) ?? 0) + 1);
   }
 
-  const target = Math.max(0, submitted.size - 1);
   const missSuspend = settings?.missDaysSuspend ?? 2;
 
   return members.map((member) => {
     const actual = clickedCount.get(member.id) ?? 0;
+    const target = Math.max(0, submitted.size - (submitted.has(member.id) ? 1 : 0));
     const remaining = Math.max(0, target - actual);
     return {
       id: member.id,
@@ -302,6 +382,12 @@ export async function applyMissPenalties() {
   let suspended = 0;
   for (const row of board) {
     if (row.remaining <= 0) continue;
+    try {
+      await prisma.penalty.create({ data: { userId: row.id, workDate: dateFromISO(bangkokDateISO()) } });
+    } catch (error) {
+      if (error && typeof error === "object" && "code" in error && error.code === "P2002") continue;
+      throw error;
+    }
     const next = row.warnCount + 1;
     const status = next >= (settings?.missDaysSuspend ?? 2) ? "INACTIVE" : "ACTIVE";
     await prisma.user.update({
@@ -316,7 +402,7 @@ export async function applyMissPenalties() {
 }
 
 export async function listDisputedProofs() {
-  await requireAdmin();
+  await requireStaff();
   return prisma.clickProof.findMany({
     where: { disputed: true },
     include: {
@@ -332,6 +418,7 @@ export async function clearDispute(proofId: string) {
   await requireAdmin();
   await prisma.clickProof.update({ where: { id: proofId }, data: { disputed: false } });
   revalidatePath("/admin");
+  revalidatePath("/admin/late");
   return { ok: true as const };
 }
 
@@ -363,6 +450,9 @@ const settingsSchema = z.object({
 
 export async function saveSettings(formData: FormData) {
   await requireAdmin();
+  try { assertImageFormSize(formData); } catch (error) {
+    return { ok: false as const, message: (error as Error).message };
+  }
   const parsed = settingsSchema.safeParse({
     siteName: formData.get("siteName"),
     tagline: formData.get("tagline"),
@@ -433,7 +523,7 @@ export async function saveSettings(formData: FormData) {
 }
 
 export async function exportMembersCsv() {
-  await requireAdmin();
+  await requireStaff();
   const rows = await prisma.user.findMany({
     where: { role: "MEMBER" },
     orderBy: { displayName: "asc" },

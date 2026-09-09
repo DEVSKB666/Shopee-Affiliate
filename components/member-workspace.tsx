@@ -20,6 +20,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { IconTabBar } from "@/components/ui/icon-tab";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { ImagePreview } from "@/components/ui/image-preview";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { MyProofEditor } from "@/components/my-proof-editor";
 import { useLivePoll } from "@/hooks/use-live-poll";
 import { useNow } from "@/hooks/use-now";
 import { bangkokDateISO, dayPhase, formatBangkokClock, thaiDateLabel, type DayPhaseState } from "@/lib/bangkok";
@@ -27,6 +31,7 @@ import { playSfx } from "@/lib/sfx";
 import type { getMemberHomeData } from "@/lib/queries";
 import {
   BarChart3,
+  CheckCircle2,
   ClipboardList,
   ExternalLink,
   Link2,
@@ -36,6 +41,7 @@ import {
   Search,
   Trophy,
   Users,
+  Upload,
   Wallet,
 } from "lucide-react";
 
@@ -114,7 +120,7 @@ export function MemberWorkspace({ data: initial }: { data: Home }) {
         {tab === "send" && <SendPanel data={data} phase={phase} onSaved={refreshLive} />}
         {tab === "click" && <ClickPanel onSaved={refreshLive} />}
         {tab === "report" && <ReportPanel today={data.today} />}
-        {tab === "pending" && <PendingPanel today={data.today} onGoClick={() => setTab("click")} />}
+        {tab === "pending" && <PendingPanel today={now ? bangkokDateISO(now) : data.today} canEditToday={phase.phase !== "closed"} onGoClick={() => setTab("click")} />}
         {tab === "stats" && <StatsPanel today={data.today} />}
         {tab === "rules" && (
           <RulesPanel
@@ -200,17 +206,20 @@ function SendPanel({
   );
 }
 
-function ClickPanel({ onSaved }: { onSaved: () => void }) {
+function ClickPanel({ onSaved }: { onSaved: () => Promise<void> }) {
   const [owners, setOwners] = useState<Awaited<ReturnType<typeof getPendingOwners>>>([]);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string>("");
   const [target, setTarget] = useState<{
     id: string;
+    ownerId: string;
     title: string;
     url: string;
     ownerName: string;
     ownerAvatar: string | null;
   } | null>(null);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [lastProof, setLastProof] = useState<{ imageUrl: string; ownerName: string } | null>(null);
   const [pending, start] = useTransition();
 
   useLivePoll(() => getPendingOwners().then(setOwners).catch(() => setOwners([])), 5000);
@@ -221,16 +230,22 @@ function ClickPanel({ onSaved }: { onSaved: () => void }) {
   );
 
   function pick(ownerId: string) {
+    if (pending) return;
     playSfx("click");
     setSelected(ownerId);
+    setTarget(null);
+    setProofFile(null);
     start(async () => {
-      const result = await searchOwnerLink(ownerId);
-      if (!result.ok) {
-        toast(result.message, result.already ? "ok" : "warn");
-        setTarget(null);
-        return;
+      try {
+        const result = await searchOwnerLink(ownerId);
+        if (!result.ok) {
+          toast(result.message, result.already ? "ok" : "warn");
+          return;
+        }
+        setTarget({ ...result.data, ownerId });
+      } catch {
+        toast("โหลดลิงก์ไม่สำเร็จ กรุณาลองอีกครั้ง", "err");
       }
-      setTarget(result.data);
     });
   }
 
@@ -255,8 +270,9 @@ function ClickPanel({ onSaved }: { onSaved: () => void }) {
             <button
               type="button"
               key={item.ownerId}
+              disabled={pending}
               onClick={() => pick(item.ownerId)}
-              className={`flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition duration-200 ${
+              className={`flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition duration-200 disabled:cursor-wait disabled:opacity-60 ${
                 selected === item.ownerId ? "bg-flame text-white" : "bg-canvas hover:bg-mist"
               }`}
             >
@@ -275,21 +291,35 @@ function ClickPanel({ onSaved }: { onSaved: () => void }) {
 
       {target ? (
         <form
-          className="mt-5 rounded-[24px] border border-dashed border-gold bg-gold/15 p-4"
-          action={(formData) => {
+          key={target.id}
+          className="mt-5 rounded-[24px] border border-border bg-paper-2 p-4 sm:p-5"
+          aria-busy={pending}
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (pending || !proofFile) return;
+            const formData = new FormData();
+            formData.set("ownerId", target.ownerId);
+            formData.set("proof", proofFile);
             start(async () => {
-              const result = await submitProof(formData);
-              toast(result.message, result.ok ? "ok" : "err");
-              if (result.ok) {
+              try {
+                const result = await submitProof(formData);
+                toast(result.message, result.ok ? "ok" : "err");
+                if (!result.ok) return;
+                setLastProof({ imageUrl: result.imageUrl, ownerName: target.ownerName });
                 setTarget(null);
+                setProofFile(null);
                 setSelected("");
-                setOwners(await getPendingOwners());
-                onSaved();
+                setOwners((current) => current.filter((owner) => owner.ownerId !== target.ownerId));
+                await onSaved().catch(() => {
+                  toast("ส่งรูปแล้ว แต่รีเฟรชยอดไม่สำเร็จ กรุณารีเฟรชหน้า", "warn");
+                });
+              } catch {
+                toast("อัปโหลดไม่สำเร็จ กรุณาลองอีกครั้ง รูปที่เลือกยังอยู่", "err");
               }
             });
           }}
         >
-          <input type="hidden" name="ownerId" value={selected} />
+          <p className="mb-3 text-xs font-semibold text-mute">1. เปิดลิงก์และกดให้เพื่อน</p>
           <div className="flex items-center gap-3">
             <UserAvatar name={target.ownerName} src={target.ownerAvatar} />
             <div>
@@ -306,21 +336,25 @@ function ClickPanel({ onSaved }: { onSaved: () => void }) {
             <ExternalLink className="h-4 w-4" aria-hidden />
             เปิดลิงก์แล้วไปกด
           </a>
-          <label className="mt-4 block text-sm">
-            รูปหลักฐาน
-            <input
-              name="proof"
-              type="file"
-              accept="image/*"
-              required
-              className="mt-2 block w-full text-xs"
-            />
-          </label>
-          <Button type="submit" tone="jade" className="mt-4 w-full" disabled={pending}>
+          <div className="mt-5 border-t border-border pt-4">
+            <p className="text-xs font-semibold text-mute">2. แนบรูปหลักฐานแล้วส่งงาน</p>
+            <ImageUpload disabled={pending} onChange={setProofFile} />
+          </div>
+          <Button type="submit" tone="jade" className="mt-4 w-full" disabled={pending || !proofFile} icon={<Upload className="h-4 w-4" aria-hidden />}>
             {pending ? "กำลังอัปโหลด..." : "ยืนยันการส่งงาน"}
           </Button>
         </form>
       ) : null}
+      {lastProof && (
+        <div role="status" className="mt-4 flex items-center gap-4 rounded-2xl border border-jade/30 bg-jade/10 p-4">
+          <ImagePreview src={lastProof.imageUrl} alt={`หลักฐานที่ส่งให้ ${lastProof.ownerName}`} className="h-20 w-20" />
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 text-sm font-semibold text-jade"><CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />ส่งหลักฐานเรียบร้อย</p>
+            <p className="mt-1 break-words text-sm">{lastProof.ownerName}</p>
+            <p className="mt-1 text-xs text-mute">แตะรูปเพื่อดูหลักฐานที่ส่งล่าสุด</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -329,12 +363,37 @@ function ReportPanel({ today }: { today: string }) {
   const [date, setDate] = useState(today);
   const [pending, start] = useTransition();
   const [report, setReport] = useState<Awaited<ReturnType<typeof getReport>> | null>(null);
+  const [proofToReport, setProofToReport] = useState<{ id: string; name: string } | null>(null);
+  const [reporting, setReporting] = useState(false);
+  const reportingRef = useRef(false);
+
+  async function confirmReport() {
+    if (!proofToReport || reportingRef.current) return;
+    const proofId = proofToReport.id;
+    reportingRef.current = true;
+    setReporting(true);
+    try {
+      const result = await disputeProof(proofId);
+      toast(result.message, result.ok ? "ok" : "err");
+      if (!result.ok) return;
+      setReport((current) => current ? {
+        ...current,
+        clicked: current.clicked.map((item) => item.id === proofId ? { ...item, disputed: true } : item),
+      } : current);
+      setProofToReport(null);
+    } catch {
+      toast("แจ้งปัญหาไม่สำเร็จ กรุณาลองอีกครั้ง", "err");
+    } finally {
+      reportingRef.current = false;
+      setReporting(false);
+    }
+  }
 
   function load(next = date) {
     start(async () => setReport(await getReport(next)));
   }
 
-  useLivePoll(() => getReport(date).then(setReport), 8000);
+  useLivePoll(() => getReport(date).then(setReport), 8000, !proofToReport);
 
   return (
     <div>
@@ -356,36 +415,32 @@ function ReportPanel({ today }: { today: string }) {
       {report?.hasLink ? (
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-jade">กดให้แล้ว {report.clicked.length}</h3>
+            <h3 className="mb-3 text-sm font-semibold text-jade">ส่งหลักฐานแล้ว {report.clicked.length}</h3>
             {report.clicked.map((item) => (
-              <div key={item.id} className="mb-2 flex items-center justify-between gap-3 rounded-2xl bg-canvas px-3 py-3">
+              <div key={item.id} className="mb-3 rounded-2xl border border-border bg-canvas p-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <UserAvatar name={item.name} src={item.avatarUrl} size="sm" />
                   <div className="min-w-0">
                     <p className="font-medium">{item.name}</p>
                     <p className="text-xs text-mute">
                       {new Date(item.at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}
-                      {item.disputed ? " · แจ้งสลิปแล้ว" : ""}
+                      {item.disputed ? " · รอแอดมินตรวจสอบ" : ""}
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <a href={item.imageUrl} target="_blank" rel="noreferrer" className="text-xs text-jade">
-                    ดูรูป
-                  </a>
+                <ImagePreview src={item.imageUrl} alt={`หลักฐานจาก ${item.name}`} className="mt-3 h-44 w-full" />
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs text-mute">แตะรูปเพื่อขยาย</span>
                   {!item.disputed ? (
                     <button
                       type="button"
-                      className="text-xs text-flame"
+                      className="min-h-11 rounded-full px-2 text-xs text-flame hover:bg-flame/10"
                       onClick={() => {
                         playSfx("click");
-                        disputeProof(item.id).then((result) => {
-                          toast(result.message, result.ok ? "ok" : "err");
-                          if (result.ok) load();
-                        });
+                        setProofToReport({ id: item.id, name: item.name });
                       }}
                     >
-                      ไม่ใช่สลิปฉัน
+                      แจ้งปัญหาหลักฐาน
                     </button>
                   ) : null}
                 </div>
@@ -403,11 +458,21 @@ function ReportPanel({ today }: { today: string }) {
           </div>
         </div>
       ) : null}
+      <ConfirmDialog
+        open={proofToReport !== null}
+        title="แจ้งปัญหาหลักฐานนี้?"
+        description={`คุณต้องการให้แอดมินตรวจสอบหลักฐานจาก ${proofToReport?.name ?? ""} ใช่ไหม? การแจ้งนี้ยังไม่ตัดสินว่าผู้ส่งทำผิด`}
+        confirmLabel="ยืนยันแจ้งปัญหา"
+        pendingLabel="กำลังแจ้ง…"
+        pending={reporting}
+        onClose={() => { if (!reportingRef.current) setProofToReport(null); }}
+        onConfirm={() => { void confirmReport(); }}
+      />
     </div>
   );
 }
 
-function PendingPanel({ today, onGoClick }: { today: string; onGoClick: () => void }) {
+function PendingPanel({ today, canEditToday, onGoClick }: { today: string; canEditToday: boolean; onGoClick: () => void }) {
   const [date, setDate] = useState(today);
   const [rows, setRows] = useState<Awaited<ReturnType<typeof getMyPending>>>([]);
 
@@ -438,15 +503,14 @@ function PendingPanel({ today, onGoClick }: { today: string; onGoClick: () => vo
       </p>
       <div className="mt-4 space-y-2">
         {rows.map((row) => (
-          <div key={row.ownerId} className="flex items-center justify-between gap-3 rounded-2xl bg-canvas px-3 py-3">
+          <div key={row.ownerId} className="rounded-2xl bg-canvas px-3 py-3">
+            <div className="flex items-center justify-between gap-3">
             <span className={`flex min-w-0 items-center gap-3 ${row.done ? "text-jade" : row.hasLink ? "text-flame" : "text-mute"}`}>
               <UserAvatar name={row.displayName} src={row.avatarUrl} size="sm" />
               <span className="truncate">{row.displayName}</span>
             </span>
-            {row.done ? (
-              <a href={row.imageUrl ?? "#"} target="_blank" rel="noreferrer" className="text-xs text-jade">
-                ภาพ
-              </a>
+            {row.done && row.imageUrl ? (
+              <span className="shrink-0 text-xs text-jade">ส่งแล้ว</span>
             ) : row.hasLink ? (
               <button
                 type="button"
@@ -460,6 +524,17 @@ function PendingPanel({ today, onGoClick }: { today: string; onGoClick: () => vo
               </button>
             ) : (
               <span className="text-xs text-mute">ยังไม่ส่งลิงก์</span>
+            )}
+            </div>
+            {row.proofId && row.imageUrl && (
+              <MyProofEditor
+                key={row.proofId}
+                proofId={row.proofId}
+                imageUrl={row.imageUrl}
+                ownerName={row.displayName}
+                canEdit={date === today && canEditToday}
+                onSaved={(imageUrl) => setRows((current) => current.map((item) => item.proofId === row.proofId ? { ...item, imageUrl } : item))}
+              />
             )}
           </div>
         ))}

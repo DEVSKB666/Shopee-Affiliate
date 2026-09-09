@@ -13,6 +13,7 @@ export function ConfirmDialog({
   confirmLabel = "ยืนยัน",
   cancelLabel = "ยกเลิก",
   pending = false,
+  pendingLabel = "กำลังลบ...",
   onClose,
   onConfirm,
 }: {
@@ -22,6 +23,7 @@ export function ConfirmDialog({
   confirmLabel?: string;
   cancelLabel?: string;
   pending?: boolean;
+  pendingLabel?: string;
   onClose: () => void;
   onConfirm: () => void;
 }) {
@@ -35,7 +37,7 @@ export function ConfirmDialog({
     lastFocus.current = document.activeElement as HTMLElement;
     const panel = panelRef.current;
     const nodes = panel?.querySelectorAll<HTMLElement>(FOCUSABLE);
-    nodes?.[0]?.focus();
+    (nodes?.[0] ?? panel)?.focus();
 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -43,7 +45,12 @@ export function ConfirmDialog({
         if (!pending) onClose();
         return;
       }
-      if (event.key !== "Tab" || !nodes?.length) return;
+      if (event.key !== "Tab") return;
+      if (!nodes?.length) {
+        event.preventDefault();
+        panel?.focus();
+        return;
+      }
       const first = nodes[0];
       const last = nodes[nodes.length - 1];
       if (event.shiftKey && document.activeElement === first) {
@@ -81,6 +88,7 @@ export function ConfirmDialog({
       <div
         ref={panelRef}
         role="dialog"
+        tabIndex={-1}
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descId}
@@ -97,7 +105,7 @@ export function ConfirmDialog({
             {cancelLabel}
           </Button>
           <Button type="button" tone="danger" onClick={onConfirm} disabled={pending}>
-            {pending ? "กำลังลบ..." : confirmLabel}
+            {pending ? pendingLabel : confirmLabel}
           </Button>
         </div>
       </div>

@@ -87,7 +87,7 @@ export function AdminOverviewLive({
       accent: "border-l-gold bg-gold/10",
     },
     {
-      label: "สลิปถูกโหวต",
+      label: "หลักฐานที่ถูกรายงาน",
       hint: "หลักฐานที่สมาชิกทักท้วง",
       value: data.disputed,
       href: "/admin/late",
@@ -161,11 +161,11 @@ export function AdminOverviewLive({
       </Card>
       {disputed.length ? (
         <Card padded={false}>
-          <h2 className="px-5 py-4 font-semibold">หลักฐานที่สมาชิกโหวตว่าไม่ใช่สลิป</h2>
-          <TableShell caption="หลักฐานถูกโหวต">
+          <h2 className="px-5 py-4 font-semibold">หลักฐานที่ถูกรายงาน</h2>
+          <TableShell caption="หลักฐานที่ถูกรายงาน">
             <thead>
               <tr>
-                <th>ผู้โหวต</th>
+                <th>ผู้ส่งหลักฐาน</th>
                 <th>เจ้าของลิงก์</th>
                 <th>หลักฐาน</th>
               </tr>

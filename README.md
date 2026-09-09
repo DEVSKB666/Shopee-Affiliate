@@ -70,6 +70,26 @@ npm run dev
 
 เปิด [http://localhost:3000](http://localhost:3000)
 
+### ทดสอบจากมือถือหรือเครื่องอื่นในวง LAN
+
+เชื่อมต่ออุปกรณ์กับเครือข่ายเดียวกัน แล้วรันบนเครื่องที่เก็บโปรเจกต์:
+
+```bash
+npm run dev:lan
+```
+
+ถ้า `npm run dev` ใช้พอร์ต 3000 อยู่แล้ว ใช้เซิร์ฟเวอร์เดิมได้ ไม่ต้องเปิดซ้ำ
+เปิด `http://<IPv4 ของเครื่องเซิร์ฟเวอร์>:3000/app` จากอุปกรณ์อื่น ดู IPv4 ของ Ethernet หรือ Wi-Fi ด้วย `ipconfig` และเข้าสู่ระบบบนอุปกรณ์นั้นอีกครั้ง
+Next.js อนุญาต development origin ตาม IPv4 ของเครื่องโดยอัตโนมัติ หาก IP เปลี่ยนให้เริ่มเซิร์ฟเวอร์ใหม่และใช้ URL ใหม่
+
+หากเปิดจากอุปกรณ์อื่นไม่ได้ ให้เปิด PowerShell แบบ **Run as administrator** บนเครื่องเซิร์ฟเวอร์ แล้วเพิ่มกฎ Firewall สำหรับเครือข่าย Private และอุปกรณ์ใน subnet เดียวกัน:
+
+```powershell
+New-NetFirewallRule -Name "SupportLink-LAN-3000" -DisplayName "Support Link LAN 3000" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 3000 -Profile Private -RemoteAddress LocalSubnet
+```
+
+เครื่องเซิร์ฟเวอร์ต้องเปิดอยู่และยังรันแอป ระหว่างทดสอบให้ใช้อินเทอร์เน็ตวงเดียวกันที่ไม่ใช่ Guest Wi-Fi ซึ่งอาจแยกอุปกรณ์ออกจากกัน
+
 | บทบาท | ยูสเซอร์เนม | รหัสผ่าน |
 | --- | --- | --- |
 | แอดมิน | `admin` | `Admin1234!` |
@@ -125,3 +145,20 @@ lib/            Prisma, เวลาไทย, อัปโหลด, เสี�
 prisma/         schema + seed
 auth.ts         Auth.js
 ```
+
+## Production data migration
+
+Before the first Vercel deploy, create the Neon schema and import the existing PostgreSQL data. Run these commands in PowerShell with PostgreSQL client tools installed, and keep the dump outside this repository:
+
+```powershell
+$dump = Join-Path $env:TEMP "support-link.dump"
+$env:SOURCE_DATABASE_URL = "postgresql://user:password@localhost:5432/support_link?schema=public"
+pg_dump --format=custom --no-owner --no-privileges --file $dump $env:SOURCE_DATABASE_URL
+
+$env:NEON_DATABASE_URL = "paste-your-neon-connection-string-here"
+$env:DATABASE_URL = $env:NEON_DATABASE_URL
+npx prisma db push
+pg_restore --data-only --no-owner --no-privileges --disable-triggers --dbname=$env:NEON_DATABASE_URL $dump
+```
+
+Do not run `npm run db:seed` against a database that already contains real data. Delete the dump after verifying the production data. New uploads use a **private** Vercel Blob store and are delivered through `/api/media` after authorization; existing files under `public/uploads` are not migrated and must be uploaded again.

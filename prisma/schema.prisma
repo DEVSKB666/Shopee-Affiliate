@@ -9,6 +9,7 @@ datasource db {
 
 enum Role {
   MEMBER
+  MODERATOR
   ADMIN
 }
 
@@ -43,6 +44,7 @@ model User {
   links        DailyLink[]
   proofs       ClickProof[]
   payments     Payment[]
+  penalties    Penalty[]
 
   @@index([facebookId])
 }
@@ -87,6 +89,17 @@ model ClickProof {
 
   @@unique([dailyLinkId, clickerId])
   @@index([clickerId, workDate])
+  @@index([workDate])
+}
+
+model Penalty {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workDate  DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  @@unique([userId, workDate])
   @@index([workDate])
 }
 

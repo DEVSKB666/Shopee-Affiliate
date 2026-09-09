@@ -7,10 +7,12 @@ import {
 } from "@/lib/bangkok";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/session";
+import { publicSettings } from "@/lib/public-settings";
+import { monthKeySchema } from "@/lib/validation";
 
 export async function getMemberHomeData() {
   const session = await auth();
-  if (!session?.user?.id) return null;
+  if (!session?.user?.id || session.user.role !== "MEMBER" || session.user.status !== "ACTIVE") return null;
 
   const settings = await getSettings();
   const today = bangkokDateISO();
@@ -29,15 +31,20 @@ export async function getMemberHomeData() {
       where: { status: "ACTIVE", role: "MEMBER" },
     }),
     prisma.clickProof.count({
-      where: { clickerId: userId, workDate },
+      where: { clickerId: userId, workDate, dailyLink: { userId: { not: userId } } },
     }),
     prisma.clickProof.count({
-      where: { dailyLink: { userId }, workDate },
+      where: {
+        dailyLink: { userId },
+        workDate,
+        clickerId: { not: userId },
+        clicker: { role: "MEMBER", status: "ACTIVE" },
+      },
     }),
   ]);
 
   const linksToday = await prisma.dailyLink.count({
-    where: { workDate, userId: { not: userId } },
+    where: { workDate, userId: { not: userId }, user: { role: "MEMBER", status: "ACTIVE" } },
   });
 
   const remaining = Math.max(0, linksToday - proofsDone);
@@ -49,7 +56,7 @@ export async function getMemberHomeData() {
       name: profile?.displayName ?? session.user.name,
       avatarUrl: profile?.avatarUrl ?? null,
     },
-    settings,
+    settings: publicSettings(settings),
     today,
     myLink: myLink
       ? { id: myLink.id, title: myLink.title, url: myLink.url }
@@ -65,10 +72,10 @@ export async function getMemberHomeData() {
 
 export async function getPaymentBoard(monthKey?: string) {
   const session = await auth();
-  if (!session?.user?.id) return null;
+  if (!session?.user?.id || session.user.role !== "MEMBER") return null;
 
   const settings = await getSettings();
-  const key = monthKey ?? bangkokMonthKey();
+  const key = monthKeySchema.parse(monthKey ?? bangkokMonthKey());
 
   const members = await prisma.user.findMany({
     where: { role: "MEMBER", status: { in: ["PENDING", "ACTIVE", "INACTIVE"] } },
@@ -86,9 +93,9 @@ export async function getPaymentBoard(monthKey?: string) {
   });
 
   return {
-    settings,
+    settings: publicSettings(settings),
     monthKey: key,
-    isAdmin: session.user.role === "ADMIN",
+    isAdmin: false,
     currentUserId: session.user.id,
     rows: members.map((member) => ({
       userId: member.id,
@@ -99,7 +106,7 @@ export async function getPaymentBoard(monthKey?: string) {
         ? {
             id: member.payments[0].id,
             status: member.payments[0].status,
-            slipUrl: member.payments[0].slipUrl,
+            ...(session.user.role === "ADMIN" || member.id === session.user.id ? { slipUrl: member.payments[0].slipUrl } : {}),
           }
         : null,
     })),

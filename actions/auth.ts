@@ -3,6 +3,7 @@
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { z } from "zod";
+import { passwordSchema } from "@/lib/validation";
 import { signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/session";
@@ -17,7 +18,7 @@ const registerSchema = z.object({
     .min(3, "ยูสเซอร์เนมอย่างน้อย 3 ตัว")
     .max(24)
     .regex(/^[a-z0-9._]+$/, "ใช้ได้เฉพาะ a-z 0-9 จุด และขีดล่าง"),
-  password: z.string().min(6, "รหัสผ่านอย่างน้อย 6 ตัว"),
+  password: passwordSchema,
   contact: z.string().trim().max(80).optional(),
   inviteCode: z.string().trim().optional(),
 });
