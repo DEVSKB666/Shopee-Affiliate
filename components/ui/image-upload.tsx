@@ -114,7 +114,7 @@ export function ImageUpload({ disabled = false, onChange, name, label = "รู�
         </button>
       )}
       <p id={`${id}-help`} className="mt-2 text-xs text-mute">JPG, PNG, WEBP, GIF · วางรูปที่คัดลอกมาในช่องนี้ · แตะรูปตัวอย่างเพื่อขยาย</p>
-      {error && <p role="alert" className="mt-2 text-sm text-flame">{error}</p>}
+      {error && <p role="alert" className="mt-2 text-sm text-danger">{error}</p>}
       {disabled && selection && <p role="status" className="mt-3 flex items-center gap-2 text-sm text-jade"><LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />กำลังอัปโหลดรูป กรุณารอสักครู่</p>}
     </div>
   );

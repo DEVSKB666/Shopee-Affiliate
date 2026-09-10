@@ -169,7 +169,7 @@ export function MemberEditor({ member, canManage = true }: { member: Member; can
       </Card>
 
       <Card className={!canManage ? "hidden" : undefined}>
-        <h2 className="font-semibold text-flame">ลบสมาชิก</h2>
+        <h2 className="font-semibold text-danger">ลบสมาชิก</h2>
         <p className="mt-1 text-sm text-mute">ลบแล้วไม่สามารถกู้คืนได้ รวมถึงลิงก์ หลักฐาน และสลิปของคนนี้</p>
         <Button
           type="button"

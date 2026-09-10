@@ -1,26 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: dark;
-  --canvas: #071018;
-  --flame: #ee4d2d;
-  --flame-deep: #d73211;
-  --ink: #f4f7fb;
-  --gold: #f0c14a;
-  --jade: #3dce9a;
-  --sky: #5b9cff;
-  --mist: #163042;
-  --mute: #c5d0dc;
-  --paper: #0b1822;
-  --paper-2: #102433;
-  --receipt: #0b1822;
-  --receipt-2: #102433;
-  --neon: #ee4d2d;
-  --neon-deep: #d73211;
-  --coin: #f0c14a;
-  --teak: #171717;
-  --border: #2c4558;
-  --shadow-card: 0 16px 40px rgba(0, 0, 0, 0.35);
+  color-scheme: light;
+  --canvas: #F7F8F4;
+  --flame: #476653;
+  --flame-deep: #36513F;
+  --ink: #25332D;
+  --gold: #846019;
+  --jade: #35684C;
+  --sky: #3F647C;
+  --mist: #EAF0E8;
+  --mute: #5F6C63;
+  --paper: #FFFFFF;
+  --paper-2: #FDFEFB;
+  --receipt: #FFFFFF;
+  --receipt-2: #FDFEFB;
+  --neon: #476653;
+  --neon-deep: #36513F;
+  --coin: #846019;
+  --teak: #25332D;
+  --border: #D5DDD3;
+  --shadow-card: 0 4px 20px rgba(37, 51, 45, 0.06);
+  --danger: #A13F3F;
+  --danger-deep: #843232;
+  --warning-surface: #F5E9C8;
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
   --space-md: 1rem;
@@ -29,6 +32,9 @@
 }
 
 @theme inline {
+  --color-danger: var(--danger);
+  --color-danger-deep: var(--danger-deep);
+  --color-warning-surface: var(--warning-surface);
   --color-canvas: var(--canvas);
   --color-flame: var(--flame);
   --color-flame-deep: var(--flame-deep);
@@ -55,14 +61,11 @@
 html,
 body {
   min-height: 100%;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
-  background:
-    radial-gradient(900px 420px at 8% -8%, rgba(238, 77, 45, 0.22), transparent 52%),
-    radial-gradient(720px 360px at 100% 0%, rgba(37, 99, 235, 0.14), transparent 46%),
-    var(--canvas);
+  background: var(--canvas);
   color: var(--ink);
   font-family: var(--font-sans);
 }
@@ -101,11 +104,7 @@ textarea:focus-visible {
 }
 
 .aurora-blob {
-  position: absolute;
-  border-radius: 999px;
-  filter: blur(60px);
-  opacity: 0.4;
-  animation: aurora-float 14s ease-in-out infinite;
+  display: none;
 }
 
 .aurora-a {
@@ -150,15 +149,7 @@ textarea:focus-visible {
 }
 
 .spotlight-card::after {
-  content: "";
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    200px circle at var(--spot-x, 50%) var(--spot-y, 0%),
-    rgba(238, 77, 45, 0.22),
-    transparent 55%
-  );
+  content: none;
 }
 
 .field {
@@ -175,7 +166,7 @@ textarea:focus-visible {
 
 .field:focus {
   border-color: var(--flame);
-  box-shadow: 0 0 0 3px rgba(238, 77, 45, 0.15);
+  box-shadow: 0 0 0 3px rgba(71, 102, 83, 0.15);
 }
 
 .ticket {
@@ -238,10 +229,7 @@ textarea:focus-visible {
 }
 
 .gradient-text {
-  background: linear-gradient(120deg, var(--flame) 0%, #ff8a65 42%, var(--gold) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--ink);
 }
 
 .admin-shell {
@@ -293,7 +281,7 @@ textarea:focus-visible {
 }
 
 .admin-table tbody tr[data-risk="true"] {
-  background: color-mix(in srgb, var(--flame) 16%, var(--paper-2));
+  background: color-mix(in srgb, var(--danger) 8%, var(--paper-2));
 }
 
 .admin-table tbody tr:last-child td {

@@ -42,7 +42,7 @@ export function ScheduleForm({ settings }: { settings: Setting }) {
           <TimeSelect label="ปิดรับหลักฐานกดคืน" name="proofTime" value={proofTime} onChange={setProofTime} disabled={pending} />
         </div>
         <div className="mt-4 rounded-2xl bg-mist p-4 text-sm" aria-live="polite">
-          {!parsed.success ? <p className="text-flame">{parsed.error.issues[0].message}</p> : <>
+          {!parsed.success ? <p className="text-danger">{parsed.error.issues[0].message}</p> : <>
             <p>ส่งลิงก์ถึง {submitTime} น. · ส่งหลักฐานถึง {proofTime} น.</p>
             <p className="mt-1 text-mute">{phase?.phase === "closed" ? "เมื่อบันทึก รอบวันนี้จะปิดรับงานทันที" : phase ? `เมื่อบันทึก จะ${phase.phase === "submit" ? "เปิดรับลิงก์ถึง " + submitTime : "เปิดรับหลักฐานต่อถึง " + proofTime} วันนี้` : "เวลาใหม่มีผลทันทีหลังบันทึก"}</p>
             <p className="mt-1 text-mute">งานที่ส่งแล้วจะยังอยู่ การเปลี่ยนเวลาไม่ย้อนกลับใบเตือนที่ออกแล้ว</p>

@@ -201,7 +201,7 @@ function SendPanel({
         {pending ? "กำลังบันทึก..." : data.myLink ? "อัปเดตลิงก์วันนี้" : "บันทึกลิงก์เข้าระบบ"}
       </Button>
       {closed ? (
-        <p className="mt-3 text-center text-xs text-flame">หมดเวลาส่งลิงก์วันนี้แล้ว</p>
+        <p className="mt-3 text-center text-xs text-danger">หมดเวลาส่งลิงก์วันนี้แล้ว</p>
       ) : null}
     </form>
   );
@@ -434,7 +434,7 @@ function ReportPanel({ today }: { today: string }) {
                   {!item.disputed ? (
                     <button
                       type="button"
-                      className="min-h-11 rounded-full px-2 text-xs text-flame hover:bg-flame/10"
+                      className="min-h-11 rounded-full px-2 text-xs text-danger hover:bg-danger/10"
                       onClick={() => {
                         setProofToReport({ id: item.id, name: item.name });
                       }}
@@ -447,9 +447,9 @@ function ReportPanel({ today }: { today: string }) {
             ))}
           </div>
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-flame">ยังไม่กด {report.pending.length}</h3>
+            <h3 className="mb-3 text-sm font-semibold text-danger">ยังไม่กด {report.pending.length}</h3>
             {report.pending.map((item) => (
-              <div key={item.name} className="mb-2 flex items-center gap-3 rounded-2xl bg-flame/10 px-3 py-3 font-medium text-flame">
+              <div key={item.name} className="mb-2 flex items-center gap-3 rounded-2xl bg-danger/10 px-3 py-3 font-medium text-danger">
                 <UserAvatar name={item.name} src={item.avatarUrl} size="sm" />
                 {item.name}
               </div>
@@ -497,14 +497,14 @@ function PendingPanel({ today, canEditToday, onGoClick }: { today: string; canEd
           เช็ก
         </Button>
       </div>
-      <p className={`mt-4 rounded-2xl px-4 py-3 text-center text-sm ${leftover ? "bg-flame/10 text-flame" : "bg-jade/10 text-jade"}`}>
+      <p className={`mt-4 rounded-2xl px-4 py-3 text-center text-sm ${leftover ? "bg-danger/10 text-danger" : "bg-jade/10 text-jade"}`}>
         {leftover ? `ค้างอีก ${leftover} คน` : "ส่งงานครบแล้ว"}
       </p>
       <div className="mt-4 space-y-2">
         {rows.map((row) => (
           <div key={row.ownerId} className="rounded-2xl bg-canvas px-3 py-3">
             <div className="flex items-center justify-between gap-3">
-            <span className={`flex min-w-0 items-center gap-3 ${row.done ? "text-jade" : row.hasLink ? "text-flame" : "text-mute"}`}>
+            <span className={`flex min-w-0 items-center gap-3 ${row.done ? "text-jade" : row.hasLink ? "text-danger" : "text-mute"}`}>
               <UserAvatar name={row.displayName} src={row.avatarUrl} size="sm" />
               <span className="truncate">{row.displayName}</span>
             </span>
@@ -562,7 +562,7 @@ function StatsPanel({ today }: { today: string }) {
             setMode("monthly");
             load("monthly");
           }}
-          className={`min-h-11 rounded-full text-sm ${mode === "monthly" ? "bg-gold text-teak" : "bg-canvas"}`}
+          className={`min-h-11 rounded-full text-sm ${mode === "monthly" ? "bg-flame text-white" : "bg-canvas"}`}
         >
           สะสมเดือนนี้
         </button>
@@ -572,7 +572,7 @@ function StatsPanel({ today }: { today: string }) {
             setMode("daily");
             load("daily");
           }}
-          className={`min-h-11 rounded-full text-sm ${mode === "daily" ? "bg-gold text-teak" : "bg-canvas"}`}
+          className={`min-h-11 rounded-full text-sm ${mode === "daily" ? "bg-flame text-white" : "bg-canvas"}`}
         >
           เจาะจงรายวัน
         </button>
@@ -600,7 +600,7 @@ function StatsPanel({ today }: { today: string }) {
                   ) : index === 1 ? (
                     <Medal className="h-4 w-4 text-mute" aria-label="อันดับ 2" />
                   ) : index === 2 ? (
-                    <Medal className="h-4 w-4 text-flame" aria-label="อันดับ 3" />
+                    <Medal className="h-4 w-4 text-gold" aria-label="อันดับ 3" />
                   ) : (
                     <span className="font-mono text-xs text-mute">#{index + 1}</span>
                   )}

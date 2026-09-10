@@ -42,7 +42,7 @@ export default async function HomePage() {
             ) : (
               <Link
                 href="/login"
-                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-flame/60 bg-flame/10 px-4 text-sm font-semibold text-flame shadow-[0_8px_24px_rgba(238,77,45,0.12)] transition duration-200 hover:bg-flame hover:text-white hover:shadow-[0_10px_28px_rgba(238,77,45,0.24)] sm:px-5"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-flame/60 bg-flame/10 px-4 text-sm font-semibold text-flame shadow-sm transition duration-200 hover:bg-flame hover:text-white hover:shadow-md sm:px-5"
                 aria-label="เข้าสู่ระบบสมาชิก"
               >
                 <LogIn className="h-4 w-4" aria-hidden />

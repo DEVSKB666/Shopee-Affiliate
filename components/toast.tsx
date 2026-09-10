@@ -35,8 +35,8 @@ export function ToastHost() {
             item.kind === "ok"
               ? "border-jade/40 bg-jade text-white"
               : item.kind === "warn"
-                ? "border-gold/50 bg-gold text-teak"
-                : "border-flame/50 bg-flame text-white"
+                ? "border-gold/30 bg-warning-surface text-teak"
+                : "border-danger/40 bg-danger text-white"
           }`}
         >
           {item.text}

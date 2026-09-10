@@ -15,8 +15,8 @@ export function Chip({
 }) {
   const tones: Record<Tone, string> = {
     jade: "bg-jade/10 text-jade",
-    gold: "bg-gold/25 text-ink",
-    flame: "bg-flame/10 text-flame",
+    gold: "bg-warning-surface text-gold",
+    flame: "bg-danger/10 text-danger",
     sky: "bg-sky/10 text-sky",
     mute: "bg-mist text-mute",
   };

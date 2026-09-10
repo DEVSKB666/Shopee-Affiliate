@@ -25,11 +25,11 @@ export function Button({
   const tones: Record<Tone, string> = {
     primary: "bg-flame text-white hover:bg-flame-deep",
     ghost: "bg-paper-2 text-ink border border-border hover:bg-mist",
-    danger: "bg-flame text-white hover:bg-flame-deep",
+    danger: "bg-danger text-white hover:bg-danger-deep",
     "danger-ghost": "border border-flame/50 bg-flame/10 text-flame hover:bg-flame hover:text-white",
     jade: "bg-jade text-white hover:opacity-90",
     sky: "bg-sky text-white hover:opacity-90",
-    gold: "bg-gold text-teak hover:opacity-90",
+    gold: "bg-warning-surface text-teak hover:opacity-90",
   };
   const sizes: Record<Size, string> = {
     md: "min-h-11 px-4 text-sm",

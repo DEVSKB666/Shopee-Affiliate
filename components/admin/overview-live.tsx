@@ -92,8 +92,8 @@ export function AdminOverviewLive({
       value: data.disputed,
       href: "/admin/late",
       icon: <CircleAlert className="h-4 w-4" />,
-      tone: "text-flame",
-      accent: "border-l-flame bg-flame/10",
+      tone: "text-danger",
+      accent: "border-l-danger bg-danger/10",
     },
   ] as const;
 
