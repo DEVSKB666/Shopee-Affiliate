@@ -68,8 +68,8 @@ export function thaiMonthLabel(monthKey: string) {
   return `${THAI_MONTHS[(month ?? 1) - 1]} ${year + 543}`;
 }
 
-export function padTime(hour: number) {
-  return `${String(hour).padStart(2, "0")}:00`;
+export function padTime(hour: number, minute = 0) {
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
 export type DayPhase = "submit" | "click" | "closed";
@@ -83,11 +83,11 @@ export type DayPhaseState = {
   nextLabel: string;
 };
 
-export function dayPhase(submitHour: number, proofHour: number, date = new Date()): DayPhaseState {
+export function dayPhase(submitHour: number, proofHour: number, date = new Date(), submitMinute = 0, proofMinute = 0): DayPhaseState {
   const { hour, minute, second } = bangkokParts(date);
   const now = hour * 3600 + minute * 60 + second;
-  const submitAt = submitHour * 3600;
-  const proofAt = proofHour * 3600;
+  const submitAt = (submitHour * 60 + submitMinute) * 60;
+  const proofAt = (proofHour * 60 + proofMinute) * 60;
 
   if (now < submitAt) {
     const secondsLeft = submitAt - now;
@@ -96,8 +96,8 @@ export function dayPhase(submitHour: number, proofHour: number, date = new Date(
       secondsLeft,
       minutesLeft: Math.ceil(secondsLeft / 60),
       windowSeconds: submitAt,
-      windowMinutes: submitHour * 60,
-      nextLabel: `ส่งลิงก์ถึง ${padTime(submitHour)}`,
+      windowMinutes: submitAt / 60,
+      nextLabel: `ส่งลิงก์ถึง ${padTime(submitHour, submitMinute)}`,
     };
   }
 
@@ -108,8 +108,8 @@ export function dayPhase(submitHour: number, proofHour: number, date = new Date(
       secondsLeft,
       minutesLeft: Math.ceil(secondsLeft / 60),
       windowSeconds: proofAt - submitAt,
-      windowMinutes: (proofHour - submitHour) * 60,
-      nextLabel: `กดคืนถึง ${padTime(proofHour)}`,
+      windowMinutes: (proofAt - submitAt) / 60,
+      nextLabel: `กดคืนถึง ${padTime(proofHour, proofMinute)}`,
     };
   }
 
@@ -118,7 +118,7 @@ export function dayPhase(submitHour: number, proofHour: number, date = new Date(
     secondsLeft: 0,
     minutesLeft: 0,
     windowSeconds: 24 * 3600 - proofAt,
-    windowMinutes: 24 * 60 - proofHour * 60,
+    windowMinutes: (24 * 3600 - proofAt) / 60,
     nextLabel: "วันนี้หมดเวลาแล้ว",
   };
 }

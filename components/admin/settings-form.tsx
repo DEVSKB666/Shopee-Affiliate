@@ -8,12 +8,16 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { ImageUpload } from "@/components/ui/image-upload";
 import type { Setting } from "@/generated/prisma/client";
+import { ScheduleForm } from "@/components/admin/schedule-form";
 import { Save } from "lucide-react";
 
 export function SettingsForm({ settings }: { settings: Setting }) {
   const [pending, start] = useTransition();
 
   return (
+    <>
+      <PageHeader title="ตั้งค่าเว็บ" description="ชื่อเว็บ รูป โหมดสมัคร ล็อกอิน และกติกากลุ่ม" />
+    <ScheduleForm settings={settings} />
     <form
       className="space-y-5"
       action={(formData) => {
@@ -23,7 +27,6 @@ export function SettingsForm({ settings }: { settings: Setting }) {
         });
       }}
     >
-      <PageHeader title="ตั้งค่าเว็บ" description="ชื่อเว็บ รูป โหมดสมัคร ล็อกอิน และกติกากลุ่ม" />
 
       <Section title="แบรนด์และข้อความ">
         <Field label="ชื่อเว็บ" name="siteName" defaultValue={settings.siteName} />
@@ -71,8 +74,6 @@ export function SettingsForm({ settings }: { settings: Setting }) {
           className="sm:col-span-2"
         />
         <div className="text-sm text-mute">ลิงก์ต่อวัน: 1 ลิงก์<input type="hidden" name="linksPerDay" value="1" /></div>
-        <Field label="ชั่วโมงตัดส่งลิงก์" name="submitHour" type="number" defaultValue={settings.submitHour} />
-        <Field label="ชั่วโมงตัดกดคืน" name="proofHour" type="number" defaultValue={settings.proofHour} />
         <Field label="วันที่แล้วเตือน" name="missDaysWarn" type="number" defaultValue={settings.missDaysWarn} />
         <Field label="วันที่แล้วพักไอดี" name="missDaysSuspend" type="number" defaultValue={settings.missDaysSuspend} />
       </Section>
@@ -94,6 +95,7 @@ export function SettingsForm({ settings }: { settings: Setting }) {
         {pending ? "กำลังบันทึก..." : "บันทึกตั้งค่า"}
       </Button>
     </form>
+    </>
   );
 }
 

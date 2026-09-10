@@ -373,7 +373,7 @@ export async function getLateBoard(dateISO?: string) {
 export async function applyMissPenalties() {
   await requireAdmin();
   const settings = await prisma.setting.findUnique({ where: { id: "default" } });
-  const phase = dayPhase(settings?.submitHour ?? 12, settings?.proofHour ?? 22);
+  const phase = dayPhase(settings?.submitHour ?? 12, settings?.proofHour ?? 22, new Date(), settings?.submitMinute ?? 0, settings?.proofMinute ?? 0);
   if (phase.phase !== "closed") {
     return { ok: false as const, message: "ออกใบเตือนได้หลังหมดเวลากดคืนแล้ว" };
   }
@@ -440,8 +440,6 @@ const settingsSchema = z.object({
   linksPerDay: z.coerce.number().int().min(1).max(5),
   missDaysWarn: z.coerce.number().int().min(1).max(14),
   missDaysSuspend: z.coerce.number().int().min(1).max(14),
-  submitHour: z.coerce.number().int().min(0).max(23),
-  proofHour: z.coerce.number().int().min(0).max(23),
   fee: z.coerce.number().int().min(0).max(9999),
   bankName: z.string().trim().min(2).max(40),
   bankAccount: z.string().trim().min(4).max(30),
@@ -471,8 +469,6 @@ export async function saveSettings(formData: FormData) {
     linksPerDay: formData.get("linksPerDay"),
     missDaysWarn: formData.get("missDaysWarn"),
     missDaysSuspend: formData.get("missDaysSuspend"),
-    submitHour: formData.get("submitHour"),
-    proofHour: formData.get("proofHour"),
     fee: formData.get("fee"),
     bankName: formData.get("bankName"),
     bankAccount: formData.get("bankAccount"),

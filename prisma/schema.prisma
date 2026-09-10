@@ -148,6 +148,8 @@ model Setting {
   rulesText              String  @default("ส่งลิงก์ภายในเที่ยง กดคืนภายในห้าทุ่ม ไม่กดคืน 1 วัน = เตือน 2 วัน = พักไอดี")
   missDaysWarn           Int     @default(1)
   missDaysSuspend        Int     @default(2)
+  submitMinute           Int     @default(0)
+  proofMinute            Int     @default(0)
   submitHour             Int     @default(12)
   proofHour              Int     @default(22)
   fee                    Int     @default(59)

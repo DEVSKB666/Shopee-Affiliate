@@ -26,7 +26,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MyProofEditor } from "@/components/my-proof-editor";
 import { useLivePoll } from "@/hooks/use-live-poll";
 import { useNow } from "@/hooks/use-now";
-import { bangkokDateISO, dayPhase, formatBangkokClock, thaiDateLabel, type DayPhaseState } from "@/lib/bangkok";
+import { bangkokDateISO, padTime, dayPhase, formatBangkokClock, thaiDateLabel, type DayPhaseState } from "@/lib/bangkok";
 import { playSfx } from "@/lib/sfx";
 import type { getMemberHomeData } from "@/lib/queries";
 import {
@@ -61,7 +61,7 @@ export function MemberWorkspace({ data: initial }: { data: Home }) {
   const [data, setData] = useState(initial);
   const now = useNow();
   const phase = now
-    ? dayPhase(data.settings.submitHour, data.settings.proofHour, now)
+    ? dayPhase(data.settings.submitHour, data.settings.proofHour, now, data.settings.submitMinute, data.settings.proofMinute)
     : data.phase;
   const previousPhase = useRef(initial.phase.phase);
   const [tab, setTab] = useState<Tab>("send");
@@ -124,6 +124,8 @@ export function MemberWorkspace({ data: initial }: { data: Home }) {
         {tab === "stats" && <StatsPanel today={data.today} />}
         {tab === "rules" && (
           <RulesPanel
+            submitMinute={data.settings.submitMinute}
+            proofMinute={data.settings.proofMinute}
             submitHour={data.settings.submitHour}
             proofHour={data.settings.proofHour}
             rulesText={data.settings.rulesText}
@@ -167,7 +169,7 @@ function SendPanel({
     >
       <h2 className="text-lg font-semibold">ส่งลิงก์ประจำวัน</h2>
       <p className="mt-1 text-sm text-mute">
-        ตัด {String(data.settings.submitHour).padStart(2, "0")}:00 น. ของวันนี้
+        ตัด {padTime(data.settings.submitHour, data.settings.submitMinute)} น. ของวันนี้
       </p>
       <label className="mt-5 block">
         <span className="mb-1.5 block text-xs text-mute">หัวข้อสินค้า</span>
@@ -631,10 +633,14 @@ function StatsPanel({ today }: { today: string }) {
 }
 
 function RulesPanel({
+  submitMinute,
+  proofMinute,
   submitHour,
   proofHour,
   rulesText,
 }: {
+  submitMinute: number;
+  proofMinute: number;
   submitHour: number;
   proofHour: number;
   rulesText: string;
@@ -644,8 +650,8 @@ function RulesPanel({
       <h2 className="text-lg font-semibold">กติกากลุ่ม</h2>
       <div className="rounded-2xl bg-gold/20 p-4">
         <p className="font-semibold">เวลากะของวัน</p>
-        <p>ส่งลิงก์ภายใน {String(submitHour).padStart(2, "0")}:00 น.</p>
-        <p>กดคืนและอัปโหลดหลักฐานภายใน {String(proofHour).padStart(2, "0")}:00 น.</p>
+        <p>ส่งลิงก์ภายใน {padTime(submitHour, submitMinute)} น.</p>
+        <p>กดคืนและอัปโหลดหลักฐานภายใน {padTime(proofHour, proofMinute)} น.</p>
       </div>
       <div className="whitespace-pre-wrap rounded-2xl bg-canvas p-4">{rulesText}</div>
       <Link

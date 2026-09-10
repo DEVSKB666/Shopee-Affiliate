@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import {
+  padTime,
   bangkokDateISO,
   bangkokMonthKey,
   bangkokParts,
@@ -18,17 +19,17 @@ function asWorkDate(iso?: string) {
   return dateFromISO(iso && /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : bangkokDateISO());
 }
 
-function assertCanSubmitLink(submitHour: number) {
+function assertCanSubmitLink(submitHour: number, submitMinute: number) {
   const { hour, minute, second } = bangkokParts();
-  if (hour * 3600 + minute * 60 + second >= submitHour * 3600) {
-    throw new Error(`หมดเวลาส่งลิงก์วันนี้แล้ว เปิดใหม่หลังเที่ยงคืน (ตัด ${String(submitHour).padStart(2, "0")}:00)`);
+  if (hour * 3600 + minute * 60 + second >= (submitHour * 60 + submitMinute) * 60) {
+    throw new Error(`หมดเวลาส่งลิงก์วันนี้แล้ว เปิดใหม่หลังเที่ยงคืน (ตัด ${padTime(submitHour, submitMinute)})`);
   }
 }
 
-function assertCanSubmitProof(proofHour: number) {
+function assertCanSubmitProof(proofHour: number, proofMinute: number) {
   const { hour, minute, second } = bangkokParts();
-  if (hour * 3600 + minute * 60 + second >= proofHour * 3600) {
-    throw new Error(`หมดเวลากดคืนวันนี้แล้ว (ตัด ${String(proofHour).padStart(2, "0")}:00)`);
+  if (hour * 3600 + minute * 60 + second >= (proofHour * 60 + proofMinute) * 60) {
+    throw new Error(`หมดเวลากดคืนวันนี้แล้ว (ตัด ${padTime(proofHour, proofMinute)})`);
   }
 }
 
@@ -45,7 +46,7 @@ export async function submitLink(formData: FormData) {
   try {
     const user = await requireActiveMember();
     const settings = await getSettings();
-    assertCanSubmitLink(settings.submitHour);
+    assertCanSubmitLink(settings.submitHour, settings.submitMinute);
 
     const parsed = linkSchema.safeParse({
       title: formData.get("title"),
@@ -146,7 +147,7 @@ export async function submitProof(formData: FormData) {
     assertImageFormSize(formData);
     const user = await requireActiveMember();
     const settings = await getSettings();
-    assertCanSubmitProof(settings.proofHour);
+    assertCanSubmitProof(settings.proofHour, settings.proofMinute);
 
     const ownerId = String(formData.get("ownerId") ?? "");
     const file = formData.get("proof") as File | null;
@@ -214,7 +215,7 @@ export async function updateMyProof(formData: FormData) {
       return { ok: false as const, message: "แก้ไขได้เฉพาะหลักฐานของวันนี้" };
     }
     const settings = await getSettings();
-    assertCanSubmitProof(settings.proofHour);
+    assertCanSubmitProof(settings.proofHour, settings.proofMinute);
 
     const imageUrl = await saveImage(file, "proofs");
     // Keep ownership in the write condition, and retain any report for admin review.
@@ -383,7 +384,7 @@ export async function getGroupStats(mode: "daily" | "monthly", dateISO?: string)
     return b.actual - a.actual;
   });
 
-  const phase = dayPhase(settings.submitHour, settings.proofHour);
+  const phase = dayPhase(settings.submitHour, settings.proofHour, new Date(), settings.submitMinute, settings.proofMinute);
   return { rows, phase };
 }
 

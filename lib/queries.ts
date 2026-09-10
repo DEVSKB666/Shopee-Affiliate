@@ -48,7 +48,7 @@ export async function getMemberHomeData() {
   });
 
   const remaining = Math.max(0, linksToday - proofsDone);
-  const phase = dayPhase(settings.submitHour, settings.proofHour);
+  const phase = dayPhase(settings.submitHour, settings.proofHour, new Date(), settings.submitMinute, settings.proofMinute);
 
   return {
     user: {
