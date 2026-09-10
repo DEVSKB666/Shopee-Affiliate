@@ -1,6 +1,6 @@
 const STORAGE_KEY = "support-link-sfx-muted";
 
-type SfxKind = "click" | "ok" | "warn" | "err";
+type SfxKind = "ok" | "warn" | "err";
 
 let ctx: AudioContext | null = null;
 const listeners = new Set<() => void>();
@@ -61,10 +61,6 @@ export function playSfx(kind: SfxKind) {
   const audio = getContext();
   if (!audio) return;
 
-  if (kind === "click") {
-    beep(audio, 920, 0.045, "square", 0.035);
-    return;
-  }
   if (kind === "ok") {
     beep(audio, 523, 0.09, "sine", 0.05);
     beep(audio, 784, 0.1, "sine", 0.04, 0.08);

@@ -5,7 +5,6 @@ import { useState } from "react";
 import { loginUser, loginWithFacebook } from "@/actions/auth";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
-import { playSfx } from "@/lib/sfx";
 import { LogIn, Lock, UserRound } from "lucide-react";
 
 export function LoginForm({ facebookEnabled }: { facebookEnabled?: boolean }) {
@@ -54,7 +53,6 @@ export function LoginForm({ facebookEnabled }: { facebookEnabled?: boolean }) {
         >
           <button
             type="submit"
-            onClick={() => playSfx("click")}
             className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-sky text-sm font-semibold text-white"
           >
             เข้าสู่ระบบด้วย Facebook

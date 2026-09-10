@@ -27,7 +27,6 @@ import { MyProofEditor } from "@/components/my-proof-editor";
 import { useLivePoll } from "@/hooks/use-live-poll";
 import { useNow } from "@/hooks/use-now";
 import { bangkokDateISO, padTime, dayPhase, formatBangkokClock, thaiDateLabel, type DayPhaseState } from "@/lib/bangkok";
-import { playSfx } from "@/lib/sfx";
 import type { getMemberHomeData } from "@/lib/queries";
 import {
   BarChart3,
@@ -233,7 +232,6 @@ function ClickPanel({ onSaved }: { onSaved: () => Promise<void> }) {
 
   function pick(ownerId: string) {
     if (pending) return;
-    playSfx("click");
     setSelected(ownerId);
     setTarget(null);
     setProofFile(null);
@@ -438,7 +436,6 @@ function ReportPanel({ today }: { today: string }) {
                       type="button"
                       className="min-h-11 rounded-full px-2 text-xs text-flame hover:bg-flame/10"
                       onClick={() => {
-                        playSfx("click");
                         setProofToReport({ id: item.id, name: item.name });
                       }}
                     >
@@ -517,7 +514,6 @@ function PendingPanel({ today, canEditToday, onGoClick }: { today: string; canEd
               <button
                 type="button"
                 onClick={() => {
-                  playSfx("click");
                   onGoClick();
                 }}
                 className="inline-flex min-h-11 cursor-pointer items-center rounded-full bg-flame px-3 text-xs text-white"
@@ -563,7 +559,6 @@ function StatsPanel({ today }: { today: string }) {
         <button
           type="button"
           onClick={() => {
-            playSfx("click");
             setMode("monthly");
             load("monthly");
           }}
@@ -574,7 +569,6 @@ function StatsPanel({ today }: { today: string }) {
         <button
           type="button"
           onClick={() => {
-            playSfx("click");
             setMode("daily");
             load("daily");
           }}

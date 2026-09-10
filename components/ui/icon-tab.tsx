@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/cn";
-import { playSfx } from "@/lib/sfx";
 
 export type IconTabItem<T extends string> = {
   id: T;
@@ -25,7 +24,6 @@ export function IconTabBar<T extends string>({
           key={item.id}
           type="button"
           onClick={() => {
-            playSfx("click");
             onChange(item.id);
           }}
           className={cn(

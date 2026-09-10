@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
-import { isSfxMuted, playSfx, setSfxMuted, subscribeSfx } from "@/lib/sfx";
+import { isSfxMuted, setSfxMuted, subscribeSfx } from "@/lib/sfx";
 
 export function SoundToggle() {
   const [muted, setMuted] = useState(false);
@@ -27,13 +27,12 @@ export function SoundToggle() {
     <button
       type="button"
       aria-pressed={muted}
-      aria-label={muted ? "เปิดเสียง" : "ปิดเสียง"}
-      title={reduced ? "ปิดเสียงเพราะลดแอนิเมชันของระบบ" : muted ? "เปิดเสียงคลิกและแจ้งเตือน" : "ปิดเสียง"}
+      aria-label={muted ? "เปิดเสียงแจ้งเตือน" : "ปิดเสียงแจ้งเตือน"}
+      title={reduced ? "ปิดเสียงแจ้งเตือนเพราะลดแอนิเมชันของระบบ" : muted ? "เปิดเสียงแจ้งเตือน" : "ปิดเสียงแจ้งเตือน"}
       disabled={reduced}
       onClick={() => {
         const next = !muted;
         setSfxMuted(next);
-        if (!next) playSfx("click");
       }}
       className="fixed bottom-4 left-4 z-50 grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-border bg-paper-2 text-ink shadow-[var(--shadow-card)] transition duration-200 hover:bg-mist disabled:cursor-not-allowed disabled:opacity-50"
     >

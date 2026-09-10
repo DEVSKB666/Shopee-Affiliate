@@ -3,7 +3,6 @@
 import type { ButtonHTMLAttributes } from "react";
 import { ClickSpark } from "@/components/bits/click-spark";
 import { cn } from "@/lib/cn";
-import { playSfx } from "@/lib/sfx";
 
 type Tone = "primary" | "ghost" | "danger" | "danger-ghost" | "jade" | "sky" | "gold";
 type Size = "md" | "sm" | "icon";
@@ -41,10 +40,7 @@ export function Button({
   const button = (
     <button
       {...props}
-      onClick={(event) => {
-        playSfx("click");
-        onClick?.(event);
-      }}
+      onClick={onClick}
       className={cn(
         "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-50",
         tones[tone],
