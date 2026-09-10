@@ -5,16 +5,25 @@ export function BrandMark({
   settings,
   light = false,
   compact = false,
+  showImage = true,
 }: {
   settings?: Pick<Setting, "siteName" | "logoUrl"> | null;
   light?: boolean;
   compact?: boolean;
+  showImage?: boolean;
 }) {
   const name = settings?.siteName || "Support Link";
-  if (settings?.logoUrl) {
+  if (showImage && settings?.logoUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={settings.logoUrl} alt={name} className={compact ? "h-8" : "h-10"} />
+      <img
+        src={settings.logoUrl}
+        alt={name}
+        className={cn(
+          "h-auto max-h-10 w-auto max-w-[min(100%,14rem)] object-contain object-left",
+          compact ? "max-h-8" : "max-h-10",
+        )}
+      />
     );
   }
 

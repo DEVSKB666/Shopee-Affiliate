@@ -18,7 +18,7 @@ export default async function LoginPage() {
     <div className="relative min-h-full overflow-hidden bg-canvas">
       <Aurora />
       <div className="relative mx-auto flex min-h-full max-w-md flex-col justify-center px-5 py-16">
-        <BrandMark settings={settings} />
+        <BrandMark settings={settings} showImage={false} />
         <Card className="mt-8 p-6">
           <p className="text-xs font-semibold tracking-[0.2em] text-mute">LOGIN</p>
           <GradientText as="h1" className="mt-2 text-2xl font-semibold">
